@@ -5,6 +5,7 @@ from bson import ObjectId
 from app.models import UserCreate, UserLogin, UserResponse, PortfolioResponse, PositionResponse, OrderResponse
 from app.auth import get_password_hash, verify_password, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.database import get_database
+from datetime import datetime
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -32,7 +33,7 @@ async def register(user_data: UserCreate):
         "created_at": datetime.utcnow()
     }
 
-    from datetime import datetime
+    
     result = await db.users.insert_one(user_dict)
 
     # Create access token
