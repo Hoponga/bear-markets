@@ -48,8 +48,8 @@ export default function PortfolioPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading portfolio...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+          <p className="mt-4 text-gray-400">Loading portfolio...</p>
         </div>
       </div>
     );
@@ -58,8 +58,8 @@ export default function PortfolioPage() {
   if (error || !portfolio) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <p className="text-red-600">{error || 'Failed to load portfolio'}</p>
+        <div className="bg-red-900/50 border border-red-700 rounded-lg p-6">
+          <p className="text-red-400">{error || 'Failed to load portfolio'}</p>
         </div>
       </div>
     );
@@ -69,10 +69,10 @@ export default function PortfolioPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Portfolio</h1>
-        <p className="text-lg text-gray-600">
+        <h1 className="text-4xl font-bold text-white mb-2">Portfolio</h1>
+        <p className="text-lg text-gray-400">
           Token Balance:{' '}
-          <span className="font-bold text-blue-600">
+          <span className="font-bold text-blue-400">
             ${portfolio.token_balance.toFixed(2)}
           </span>
         </p>
@@ -80,56 +80,56 @@ export default function PortfolioPage() {
 
       {/* Positions */}
       <div className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Positions</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">Your Positions</h2>
         <PositionsList positions={portfolio.positions} />
       </div>
 
       {/* Open Orders */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Open Orders</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">Open Orders</h2>
         {portfolio.open_orders.length > 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Market
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Side
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Filled
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-700">
                 {portfolio.open_orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={order.id} className="hover:bg-gray-700/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {order.market_id.slice(0, 8)}...
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${
                           order.side === 'YES'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-green-900/50 text-green-400 border border-green-700'
+                            : 'bg-red-900/50 text-red-400 border border-red-700'
                         }`}
                       >
                         {order.side}
@@ -139,29 +139,29 @@ export default function PortfolioPage() {
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${
                           order.order_type === 'BUY'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-orange-100 text-orange-700'
+                            ? 'bg-blue-900/50 text-blue-400 border border-blue-700'
+                            : 'bg-orange-900/50 text-orange-400 border border-orange-700'
                         }`}
                       >
                         {order.order_type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       ${order.price.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {order.quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {order.filled_quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {order.status}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
                         onClick={() => handleCancelOrder(order.id)}
-                        className="text-sm text-red-600 hover:text-red-800 font-medium"
+                        className="text-sm text-red-400 hover:text-red-300 font-medium"
                       >
                         Cancel
                       </button>
@@ -172,8 +172,8 @@ export default function PortfolioPage() {
             </table>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <p className="text-gray-500">You don't have any open orders.</p>
+          <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-8 text-center">
+            <p className="text-gray-400">You don't have any open orders.</p>
           </div>
         )}
       </div>

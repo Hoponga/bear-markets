@@ -64,17 +64,17 @@ export default function HomePage() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-white mb-2">
             Active Markets
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-400">
             Trade on prediction markets at the number one public university in the world
           </p>
         </div>
         {user && (
           <button
             onClick={() => setShowIdeaForm(!showIdeaForm)}
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition flex-shrink-0"
+            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition flex-shrink-0"
           >
             {showIdeaForm ? 'Cancel' : 'Suggest a Market'}
           </button>
@@ -83,35 +83,35 @@ export default function HomePage() {
 
       {/* Market Idea Form */}
       {showIdeaForm && user && (
-        <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Suggest a New Market</h2>
-          <p className="text-gray-600 mb-4">
+        <div className="mb-8 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-6">
+          <h2 className="text-xl font-bold text-white mb-4">Suggest a New Market</h2>
+          <p className="text-gray-400 mb-4">
             Have an idea for a prediction market? Submit it here and our team will review it.
           </p>
 
           <form onSubmit={handleSubmitIdea} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Market Title
               </label>
               <input
                 type="text"
                 value={ideaTitle}
                 onChange={(e) => setIdeaTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 placeholder="e.g., Will the new student center open by Fall 2025?"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description & Resolution Criteria
               </label>
               <textarea
                 value={ideaDescription}
                 onChange={(e) => setIdeaDescription(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 rows={4}
                 placeholder="Describe your market idea and how it should be resolved..."
                 required
@@ -119,21 +119,21 @@ export default function HomePage() {
             </div>
 
             {ideaError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-600">{ideaError}</p>
+              <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
+                <p className="text-sm text-red-400">{ideaError}</p>
               </div>
             )}
 
             {ideaSuccess && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p className="text-sm text-green-600">{ideaSuccess}</p>
+              <div className="bg-green-900/50 border border-green-700 rounded-lg p-3">
+                <p className="text-sm text-green-400">{ideaSuccess}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={ideaLoading}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
+              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 disabled:bg-gray-600 transition"
             >
               {ideaLoading ? 'Submitting...' : 'Submit Idea'}
             </button>
@@ -144,15 +144,15 @@ export default function HomePage() {
       {/* Loading State */}
       {loading && (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading markets...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+          <p className="mt-4 text-gray-400">Loading markets...</p>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{error}</p>
+        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4">
+          <p className="text-red-400">{error}</p>
         </div>
       )}
 
@@ -166,9 +166,9 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
-              <p className="text-gray-500 text-lg">No active markets yet.</p>
-              <p className="text-gray-400 mt-2">Check back soon!</p>
+            <div className="text-center py-12 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+              <p className="text-gray-400 text-lg">No active markets yet.</p>
+              <p className="text-gray-500 mt-2">Check back soon!</p>
             </div>
           )}
         </>

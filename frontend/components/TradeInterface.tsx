@@ -73,13 +73,13 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
     : parseFloat(tokenAmount || '0');
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Place Order</h3>
+    <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">Place Order</h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Execution Type Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Order Mode</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Order Mode</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -87,7 +87,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 executionType === 'MARKET'
                   ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               Market
@@ -98,7 +98,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 executionType === 'LIMIT'
                   ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               Limit
@@ -113,7 +113,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
 
         {/* Side Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Side</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Side</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -121,7 +121,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 side === 'YES'
                   ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               YES
@@ -132,7 +132,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 side === 'NO'
                   ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               NO
@@ -142,7 +142,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
 
         {/* Order Type Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Action</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Action</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -150,7 +150,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 orderType === 'BUY'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               BUY
@@ -161,7 +161,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 orderType === 'SELL'
                   ? 'bg-orange-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               SELL
@@ -172,7 +172,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
         {/* Market Order Input */}
         {executionType === 'MARKET' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               {orderType === 'BUY' ? 'Amount to Spend ($)' : 'Shares to Sell'}
             </label>
             <input
@@ -181,7 +181,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               min={orderType === 'BUY' ? '0.01' : '1'}
               value={tokenAmount}
               onChange={(e) => setTokenAmount(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
               required
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -196,7 +196,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
         {executionType === 'LIMIT' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Limit Price ($)
               </label>
               <input
@@ -206,14 +206,14 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
                 max="0.99"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">Between $0.01 and $0.99</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Quantity (shares)
               </label>
               <input
@@ -221,7 +221,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 required
               />
             </div>
@@ -230,15 +230,15 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
 
         {/* Estimated Cost/Value */}
         {orderType === 'BUY' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-900">
+          <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3">
+            <p className="text-sm text-blue-300">
               <span className="font-medium">
                 {executionType === 'MARKET' ? 'Budget:' : 'Max Cost:'}
               </span>{' '}
               ${estimatedCost.toFixed(2)}
             </p>
             {user && (
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-blue-400 mt-1">
                 Your balance: ${user.token_balance.toFixed(2)}
               </p>
             )}
@@ -247,15 +247,15 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-sm text-green-600">{success}</p>
+          <div className="bg-green-900/50 border border-green-700 rounded-lg p-3">
+            <p className="text-sm text-green-400">{success}</p>
           </div>
         )}
 
@@ -263,7 +263,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
         <button
           type="submit"
           disabled={loading || !user}
-          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
+          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 disabled:bg-gray-600 transition"
         >
           {loading
             ? 'Processing...'

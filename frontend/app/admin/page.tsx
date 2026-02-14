@@ -174,17 +174,17 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl font-bold text-gray-900 mb-8">Admin Panel</h1>
+      <h1 className="text-4xl font-bold text-white mb-8">Admin Panel</h1>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-8">
+      <div className="border-b border-gray-700 mb-8">
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('markets')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'markets'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-white text-white'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
             }`}
           >
             Markets
@@ -193,8 +193,8 @@ export default function AdminPage() {
             onClick={() => setActiveTab('admins')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'admins'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-white text-white'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
             }`}
           >
             Admin Management
@@ -203,8 +203,8 @@ export default function AdminPage() {
             onClick={() => setActiveTab('ideas')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'ideas'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-white text-white'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
             }`}
           >
             Market Ideas
