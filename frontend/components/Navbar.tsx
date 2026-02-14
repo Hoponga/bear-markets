@@ -75,6 +75,12 @@ export default function Navbar() {
                   >
                     Portfolio
                   </Link>
+                  <Link
+                    href="/leaderboard"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition"
+                  >
+                    Leaderboard
+                  </Link>
                   {user.is_admin && (
                     <Link
                       href="/admin"
@@ -101,12 +107,20 @@ export default function Navbar() {
                   </div>
                 </>
               ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-                >
-                  Sign In
-                </button>
+                <>
+                  <Link
+                    href="/leaderboard"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition"
+                  >
+                    Leaderboard
+                  </Link>
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Sign In
+                  </button>
+                </>
               )}
             </div>
           </div>

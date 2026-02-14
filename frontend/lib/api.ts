@@ -6,7 +6,8 @@ import type {
   Order,
   Portfolio,
   Orderbook,
-  AuthResponse
+  AuthResponse,
+  LeaderboardResponse
 } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -21,7 +22,9 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const authHeader = getAuthHeader();
-  config.headers = { ...config.headers, ...authHeader };
+  if ('Authorization' in authHeader) {
+    config.headers.set('Authorization', authHeader.Authorization);
+  }
   return config;
 });
 
@@ -119,6 +122,16 @@ export const ordersAPI = {
 
   cancel: async (orderId: string): Promise<void> => {
     await api.delete(`/api/orders/${orderId}`);
+  },
+};
+
+// Leaderboard endpoints
+export const leaderboardAPI = {
+  get: async (page: number = 1, pageSize: number = 10): Promise<LeaderboardResponse> => {
+    const { data } = await api.get('/api/auth/leaderboard', {
+      params: { page, page_size: pageSize },
+    });
+    return data;
   },
 };
 

@@ -135,3 +135,21 @@ class OrderbookResponse(BaseModel):
     NO: OrderbookSide
     midpoint_yes: float
     midpoint_no: float
+
+
+# Leaderboard Models
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user_id: str
+    name: str
+    token_balance: float
+    position_value: float
+    total_value: float
+
+
+class LeaderboardResponse(BaseModel):
+    entries: list[LeaderboardEntry]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

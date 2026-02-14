@@ -34,7 +34,7 @@ export default function HomePage() {
           Active Markets
         </h1>
         <p className="text-lg text-gray-600">
-          Trade on prediction markets at UC Berkeley
+          Trade on prediction markets at the number one public university in the world
         </p>
       </div>
 

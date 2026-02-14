@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from datetime import timedelta
 from bson import ObjectId
 
-from app.models import UserCreate, UserLogin, UserResponse, PortfolioResponse, PositionResponse, OrderResponse
+from app.models import UserCreate, UserLogin, UserResponse, PortfolioResponse, PositionResponse, OrderResponse, LeaderboardEntry, LeaderboardResponse
 from app.auth import get_password_hash, verify_password, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.database import get_database
 from datetime import datetime
@@ -149,4 +149,128 @@ async def get_portfolio(current_user: dict = Depends(get_current_user)):
         token_balance=current_user["token_balance"],
         positions=positions,
         open_orders=open_orders
+    )
+
+
+@router.get("/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard(page: int = 1, page_size: int = 10):
+    """Get paginated leaderboard of users sorted by total portfolio value (tokens + positions)"""
+    db = await get_database()
+
+    # Validate pagination params
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = 10
+    if page_size > 100:
+        page_size = 100
+
+    # Get total count
+    total = await db.users.count_documents({})
+
+    # Calculate skip value
+    skip = (page - 1) * page_size
+
+    # Aggregation pipeline to calculate total portfolio value
+    pipeline = [
+        # Lookup positions for each user
+        {
+            "$lookup": {
+                "from": "positions",
+                "localField": "_id",
+                "foreignField": "user_id",
+                "as": "positions"
+            }
+        },
+        # Unwind positions (preserving users with no positions)
+        {
+            "$unwind": {
+                "path": "$positions",
+                "preserveNullAndEmptyArrays": True
+            }
+        },
+        # Lookup market data for each position
+        {
+            "$lookup": {
+                "from": "markets",
+                "localField": "positions.market_id",
+                "foreignField": "_id",
+                "as": "market_data"
+            }
+        },
+        # Unwind market data
+        {
+            "$unwind": {
+                "path": "$market_data",
+                "preserveNullAndEmptyArrays": True
+            }
+        },
+        # Calculate position value for each position
+        {
+            "$addFields": {
+                "position_value": {
+                    "$cond": {
+                        "if": {"$and": ["$positions", "$market_data"]},
+                        "then": {
+                            "$add": [
+                                {"$multiply": [
+                                    {"$ifNull": ["$positions.yes_shares", 0]},
+                                    {"$ifNull": ["$market_data.current_yes_price", 0.5]}
+                                ]},
+                                {"$multiply": [
+                                    {"$ifNull": ["$positions.no_shares", 0]},
+                                    {"$ifNull": ["$market_data.current_no_price", 0.5]}
+                                ]}
+                            ]
+                        },
+                        "else": 0
+                    }
+                }
+            }
+        },
+        # Group by user to sum all position values
+        {
+            "$group": {
+                "_id": "$_id",
+                "name": {"$first": "$name"},
+                "token_balance": {"$first": "$token_balance"},
+                "total_position_value": {"$sum": "$position_value"}
+            }
+        },
+        # Calculate total value
+        {
+            "$addFields": {
+                "total_value": {"$add": ["$token_balance", "$total_position_value"]}
+            }
+        },
+        # Sort by total value descending
+        {"$sort": {"total_value": -1}},
+        # Skip and limit for pagination
+        {"$skip": skip},
+        {"$limit": page_size}
+    ]
+
+    cursor = db.users.aggregate(pipeline)
+
+    entries = []
+    rank = skip + 1
+    async for user in cursor:
+        entries.append(LeaderboardEntry(
+            rank=rank,
+            user_id=str(user["_id"]),
+            name=user["name"],
+            token_balance=user["token_balance"],
+            position_value=round(user["total_position_value"], 2),
+            total_value=round(user["total_value"], 2)
+        ))
+        rank += 1
+
+    total_pages = (total + page_size - 1) // page_size  # Ceiling division
+
+    return LeaderboardResponse(
+        entries=entries,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
     )
