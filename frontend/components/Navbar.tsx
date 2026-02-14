@@ -55,7 +55,7 @@ export default function Navbar() {
             <Link href="/" className="flex items-center space-x-3">
               <span className="text-2xl font-bold text-blue-400">📊</span>
               <span className="text-xl font-bold text-white">
-                Berkeley Markets
+                Bear Markets
               </span>
             </Link>
 
@@ -74,6 +74,12 @@ export default function Navbar() {
                     className="text-gray-300 hover:text-blue-400 font-medium transition"
                   >
                     Portfolio
+                  </Link>
+                  <Link
+                    href="/private-markets"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition"
+                  >
+                    🔒 Private
                   </Link>
                   <Link
                     href="/leaderboard"

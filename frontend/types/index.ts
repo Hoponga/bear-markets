@@ -17,6 +17,8 @@ export interface Market {
   current_yes_price: number;
   current_no_price: number;
   total_volume: number;
+  is_private?: boolean;
+  invite_code?: string;
 }
 
 export interface Order {

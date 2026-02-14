@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: berkeley_markets
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - DATABASE_NAME=berkeley_markets
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:
