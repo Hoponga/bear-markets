@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'UC Berkeley Prediction Markets',
-  description: 'Trade on prediction markets at UC Berkeley',
+  description: 'Trade on prediction markets at the number one public university in the world',
 };
 
 export default function RootLayout({

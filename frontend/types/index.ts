@@ -80,3 +80,20 @@ export interface AuthResponse {
   token_type: string;
   user: User;
 }
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: string;
+  name: string;
+  token_balance: number;
+  position_value: number;
+  total_value: number;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
