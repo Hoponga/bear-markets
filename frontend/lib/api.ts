@@ -7,7 +7,11 @@ import type {
   Portfolio,
   Orderbook,
   AuthResponse,
-  LeaderboardResponse
+  LeaderboardResponse,
+  UserListResponse,
+  MarketIdea,
+  MarketIdeasResponse,
+  MarketOrderResponse
 } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -92,6 +96,11 @@ export const marketsAPI = {
   resolve: async (marketId: string, outcome: 'YES' | 'NO'): Promise<void> => {
     await api.post(`/api/markets/${marketId}/resolve`, { outcome });
   },
+
+  delete: async (marketId: string): Promise<{ message: string }> => {
+    const { data } = await api.delete(`/api/markets/${marketId}`);
+    return data;
+  },
 };
 
 // Orders endpoints
@@ -109,6 +118,21 @@ export const ordersAPI = {
       order_type: orderType,
       price,
       quantity,
+    });
+    return data;
+  },
+
+  createMarketOrder: async (
+    marketId: string,
+    side: 'YES' | 'NO',
+    orderType: 'BUY' | 'SELL',
+    tokenAmount: number
+  ): Promise<MarketOrderResponse> => {
+    const { data } = await api.post('/api/orders/market', {
+      market_id: marketId,
+      side,
+      order_type: orderType,
+      token_amount: tokenAmount,
     });
     return data;
   },
@@ -131,6 +155,52 @@ export const leaderboardAPI = {
     const { data } = await api.get('/api/auth/leaderboard', {
       params: { page, page_size: pageSize },
     });
+    return data;
+  },
+};
+
+// Admin endpoints
+export const adminAPI = {
+  listUsers: async (page: number = 1, pageSize: number = 20): Promise<UserListResponse> => {
+    const { data } = await api.get('/api/auth/users', {
+      params: { page, page_size: pageSize },
+    });
+    return data;
+  },
+
+  makeAdmin: async (email: string): Promise<{ message: string }> => {
+    const { data } = await api.post('/api/auth/make-admin', { email });
+    return data;
+  },
+
+  removeAdmin: async (email: string): Promise<{ message: string }> => {
+    const { data } = await api.post('/api/auth/remove-admin', { email });
+    return data;
+  },
+
+  listMarketIdeas: async (
+    page: number = 1,
+    pageSize: number = 20,
+    statusFilter?: string
+  ): Promise<MarketIdeasResponse> => {
+    const { data } = await api.get('/api/auth/market-ideas', {
+      params: { page, page_size: pageSize, status_filter: statusFilter },
+    });
+    return data;
+  },
+
+  updateIdeaStatus: async (ideaId: string, status: string): Promise<{ message: string }> => {
+    const { data } = await api.post(`/api/auth/market-ideas/${ideaId}/update-status`, null, {
+      params: { new_status: status },
+    });
+    return data;
+  },
+};
+
+// Market Ideas endpoints (for regular users)
+export const marketIdeasAPI = {
+  submit: async (title: string, description: string): Promise<MarketIdea> => {
+    const { data } = await api.post('/api/auth/market-ideas', { title, description });
     return data;
   },
 };

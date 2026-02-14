@@ -12,8 +12,10 @@ interface TradeInterfaceProps {
 export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfaceProps) {
   const [side, setSide] = useState<'YES' | 'NO'>('YES');
   const [orderType, setOrderType] = useState<'BUY' | 'SELL'>('BUY');
+  const [executionType, setExecutionType] = useState<'MARKET' | 'LIMIT'>('MARKET');
   const [price, setPrice] = useState('0.50');
   const [quantity, setQuantity] = useState('10');
+  const [tokenAmount, setTokenAmount] = useState('10');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -32,21 +34,31 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
     setLoading(true);
 
     try {
-      const priceNum = parseFloat(price);
-      const quantityNum = parseInt(quantity);
+      if (executionType === 'MARKET') {
+        const amount = parseFloat(tokenAmount);
+        if (amount <= 0) {
+          throw new Error('Amount must be positive');
+        }
 
-      if (priceNum <= 0 || priceNum >= 1) {
-        throw new Error('Price must be between 0 and 1');
+        const result = await ordersAPI.createMarketOrder(marketId, side, orderType, amount);
+        setSuccess(result.message);
+        onOrderPlaced?.();
+      } else {
+        const priceNum = parseFloat(price);
+        const quantityNum = parseInt(quantity);
+
+        if (priceNum <= 0 || priceNum >= 1) {
+          throw new Error('Price must be between 0 and 1');
+        }
+        if (quantityNum <= 0) {
+          throw new Error('Quantity must be positive');
+        }
+
+        await ordersAPI.create(marketId, side, orderType, priceNum, quantityNum);
+        setSuccess(`${orderType} limit order placed successfully!`);
+        setQuantity('10');
+        onOrderPlaced?.();
       }
-      if (quantityNum <= 0) {
-        throw new Error('Quantity must be positive');
-      }
-
-      await ordersAPI.create(marketId, side, orderType, priceNum, quantityNum);
-
-      setSuccess(`${orderType} order placed successfully!`);
-      setQuantity('10');
-      onOrderPlaced?.();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -56,13 +68,49 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
     }
   };
 
-  const estimatedCost = parseFloat(price) * parseInt(quantity || '0');
+  const estimatedCost = executionType === 'LIMIT'
+    ? parseFloat(price) * parseInt(quantity || '0')
+    : parseFloat(tokenAmount || '0');
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Place Order</h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Execution Type Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Order Mode</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setExecutionType('MARKET')}
+              className={`py-2 px-4 rounded-lg font-medium transition ${
+                executionType === 'MARKET'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Market
+            </button>
+            <button
+              type="button"
+              onClick={() => setExecutionType('LIMIT')}
+              className={`py-2 px-4 rounded-lg font-medium transition ${
+                executionType === 'LIMIT'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Limit
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {executionType === 'MARKET'
+              ? 'Execute immediately at best available prices'
+              : 'Set your own price, order waits until matched'}
+          </p>
+        </div>
+
         {/* Side Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Side</label>
@@ -94,7 +142,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
 
         {/* Order Type Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Action</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -121,44 +169,73 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
           </div>
         </div>
 
-        {/* Price Input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Limit Price ($)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0.01"
-            max="0.99"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-          <p className="text-xs text-gray-500 mt-1">Between $0.01 and $0.99</p>
-        </div>
+        {/* Market Order Input */}
+        {executionType === 'MARKET' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {orderType === 'BUY' ? 'Amount to Spend ($)' : 'Shares to Sell'}
+            </label>
+            <input
+              type="number"
+              step={orderType === 'BUY' ? '0.01' : '1'}
+              min={orderType === 'BUY' ? '0.01' : '1'}
+              value={tokenAmount}
+              onChange={(e) => setTokenAmount(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {orderType === 'BUY'
+                ? 'Will buy as many shares as possible with this amount'
+                : 'Number of shares to sell at best available prices'}
+            </p>
+          </div>
+        )}
 
-        {/* Quantity Input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Quantity (shares)
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
+        {/* Limit Order Inputs */}
+        {executionType === 'LIMIT' && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Limit Price ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                max="0.99"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Between $0.01 and $0.99</p>
+            </div>
 
-        {/* Estimated Cost */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quantity (shares)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+          </>
+        )}
+
+        {/* Estimated Cost/Value */}
         {orderType === 'BUY' && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-900">
-              <span className="font-medium">Max Cost:</span> ${estimatedCost.toFixed(2)}
+              <span className="font-medium">
+                {executionType === 'MARKET' ? 'Budget:' : 'Max Cost:'}
+              </span>{' '}
+              ${estimatedCost.toFixed(2)}
             </p>
             {user && (
               <p className="text-xs text-blue-700 mt-1">
@@ -188,7 +265,11 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
           disabled={loading || !user}
           className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
-          {loading ? 'Placing Order...' : !user ? 'Sign In to Trade' : `Place ${orderType} Order`}
+          {loading
+            ? 'Processing...'
+            : !user
+            ? 'Sign In to Trade'
+            : `${executionType === 'MARKET' ? 'Execute' : 'Place'} ${orderType} Order`}
         </button>
       </form>
     </div>

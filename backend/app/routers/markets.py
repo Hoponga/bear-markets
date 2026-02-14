@@ -182,3 +182,69 @@ async def resolve_market(
     )
 
     return {"message": f"Market resolved as {resolution.outcome}"}
+
+
+@router.delete("/{market_id}")
+async def delete_market(
+    market_id: str,
+    current_user: dict = Depends(get_current_admin)
+):
+    """Delete a market and refund all users (admin only)"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(market_id):
+        raise HTTPException(status_code=400, detail="Invalid market ID")
+
+    market_obj_id = ObjectId(market_id)
+    market = await db.markets.find_one({"_id": market_obj_id})
+
+    if not market:
+        raise HTTPException(status_code=404, detail="Market not found")
+
+    total_refunded = 0.0
+    users_refunded = 0
+
+    # Refund all positions - return tokens based on what users paid
+    positions_cursor = db.positions.find({"market_id": market_obj_id})
+    async for position in positions_cursor:
+        user_id = position["user_id"]
+
+        # Calculate refund based on average prices paid
+        yes_refund = position.get("yes_shares", 0) * position.get("avg_yes_price", 0.5)
+        no_refund = position.get("no_shares", 0) * position.get("avg_no_price", 0.5)
+        refund = yes_refund + no_refund
+
+        if refund > 0:
+            await db.users.update_one(
+                {"_id": user_id},
+                {"$inc": {"token_balance": refund}}
+            )
+            total_refunded += refund
+            users_refunded += 1
+
+    # Refund open/partial orders (tokens that are locked)
+    orders_cursor = db.orders.find({
+        "market_id": market_obj_id,
+        "status": {"$in": ["OPEN", "PARTIAL"]},
+        "order_type": "BUY"
+    })
+    async for order in orders_cursor:
+        # Refund unfilled portion of buy orders
+        unfilled = order["quantity"] - order.get("filled_quantity", 0)
+        refund = unfilled * order["price"]
+        if refund > 0:
+            await db.users.update_one(
+                {"_id": order["user_id"]},
+                {"$inc": {"token_balance": refund}}
+            )
+            total_refunded += refund
+
+    # Delete all related data
+    await db.positions.delete_many({"market_id": market_obj_id})
+    await db.orders.delete_many({"market_id": market_obj_id})
+    await db.trades.delete_many({"market_id": market_obj_id})
+    await db.markets.delete_one({"_id": market_obj_id})
+
+    return {
+        "message": f"Market deleted successfully. Refunded ${total_refunded:.2f} to {users_refunded} users."
+    }

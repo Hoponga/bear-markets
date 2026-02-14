@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { marketsAPI } from '@/lib/api';
+import { authStorage } from '@/lib/auth';
 import OrderBook from '@/components/OrderBook';
 import TradeInterface from '@/components/TradeInterface';
 import PriceChart from '@/components/PriceChart';
-import type { Market } from '@/types';
+import type { Market, User } from '@/types';
 
 export default function MarketDetailPage() {
   const params = useParams();
@@ -14,9 +15,11 @@ export default function MarketDetailPage() {
   const [market, setMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadMarket();
+    setUser(authStorage.getUser());
   }, [marketId]);
 
   const loadMarket = async () => {
@@ -54,6 +57,7 @@ export default function MarketDetailPage() {
 
   const yesPrice = (market.current_yes_price * 100).toFixed(1);
   const noPrice = (market.current_no_price * 100).toFixed(1);
+  const isAdmin = user?.is_admin ?? false;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -86,23 +90,25 @@ export default function MarketDetailPage() {
         </div>
       </div>
 
-      {/* Trading Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {/* Left: YES Orderbook */}
-        <div>
-          <OrderBook marketId={marketId} side="YES" />
-        </div>
-
-        {/* Center: Trade Interface */}
-        <div>
-          <TradeInterface marketId={marketId} onOrderPlaced={loadMarket} />
-        </div>
-
-        {/* Right: NO Orderbook */}
-        <div>
-          <OrderBook marketId={marketId} side="NO" />
-        </div>
+      {/* Trading Interface - Centered */}
+      <div className="max-w-md mx-auto mb-8">
+        <TradeInterface marketId={marketId} onOrderPlaced={loadMarket} />
       </div>
+
+      {/* Orderbook - Admin Only */}
+      {isAdmin && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Orderbook (Admin View)</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <OrderBook marketId={marketId} side="YES" />
+            </div>
+            <div>
+              <OrderBook marketId={marketId} side="NO" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Price Chart */}
       <PriceChart marketId={marketId} />

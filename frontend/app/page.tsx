@@ -1,17 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { marketsAPI } from '@/lib/api';
+import { marketsAPI, marketIdeasAPI } from '@/lib/api';
+import { authStorage } from '@/lib/auth';
 import MarketCard from '@/components/MarketCard';
-import type { Market } from '@/types';
+import type { Market, User } from '@/types';
 
 export default function HomePage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+
+  // Market idea form state
+  const [showIdeaForm, setShowIdeaForm] = useState(false);
+  const [ideaTitle, setIdeaTitle] = useState('');
+  const [ideaDescription, setIdeaDescription] = useState('');
+  const [ideaLoading, setIdeaLoading] = useState(false);
+  const [ideaSuccess, setIdeaSuccess] = useState('');
+  const [ideaError, setIdeaError] = useState('');
 
   useEffect(() => {
     loadMarkets();
+    setUser(authStorage.getUser());
   }, []);
 
   const loadMarkets = async () => {
@@ -26,17 +37,109 @@ export default function HomePage() {
     }
   };
 
+  const handleSubmitIdea = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIdeaError('');
+    setIdeaSuccess('');
+    setIdeaLoading(true);
+
+    try {
+      await marketIdeasAPI.submit(ideaTitle, ideaDescription);
+      setIdeaSuccess('Your market idea has been submitted for review!');
+      setIdeaTitle('');
+      setIdeaDescription('');
+      setTimeout(() => {
+        setShowIdeaForm(false);
+        setIdeaSuccess('');
+      }, 2000);
+    } catch (err: any) {
+      setIdeaError(err.response?.data?.detail || 'Failed to submit idea');
+    } finally {
+      setIdeaLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Active Markets
-        </h1>
-        <p className="text-lg text-gray-600">
-          Trade on prediction markets at the number one public university in the world
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Active Markets
+          </h1>
+          <p className="text-lg text-gray-600">
+            Trade on prediction markets at the number one public university in the world
+          </p>
+        </div>
+        {user && (
+          <button
+            onClick={() => setShowIdeaForm(!showIdeaForm)}
+            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition flex-shrink-0"
+          >
+            {showIdeaForm ? 'Cancel' : 'Suggest a Market'}
+          </button>
+        )}
       </div>
+
+      {/* Market Idea Form */}
+      {showIdeaForm && user && (
+        <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Suggest a New Market</h2>
+          <p className="text-gray-600 mb-4">
+            Have an idea for a prediction market? Submit it here and our team will review it.
+          </p>
+
+          <form onSubmit={handleSubmitIdea} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Market Title
+              </label>
+              <input
+                type="text"
+                value={ideaTitle}
+                onChange={(e) => setIdeaTitle(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Will the new student center open by Fall 2025?"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description & Resolution Criteria
+              </label>
+              <textarea
+                value={ideaDescription}
+                onChange={(e) => setIdeaDescription(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={4}
+                placeholder="Describe your market idea and how it should be resolved..."
+                required
+              />
+            </div>
+
+            {ideaError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{ideaError}</p>
+              </div>
+            )}
+
+            {ideaSuccess && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-600">{ideaSuccess}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={ideaLoading}
+              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
+            >
+              {ideaLoading ? 'Submitting...' : 'Submit Idea'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Loading State */}
       {loading && (

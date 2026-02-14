@@ -95,3 +95,44 @@ export interface LeaderboardResponse {
   page_size: number;
   total_pages: number;
 }
+
+export interface UserListEntry {
+  id: string;
+  email: string;
+  name: string;
+  is_admin: boolean;
+  token_balance: number;
+}
+
+export interface UserListResponse {
+  users: UserListEntry[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface MarketIdea {
+  id: string;
+  user_id: string;
+  user_name: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
+export interface MarketIdeasResponse {
+  ideas: MarketIdea[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface MarketOrderResponse {
+  shares_filled: number;
+  tokens_spent: number;
+  average_price: number;
+  message: string;
+}

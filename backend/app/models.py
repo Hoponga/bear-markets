@@ -79,6 +79,20 @@ class OrderCreate(BaseModel):
             }
         }
 
+
+class MarketOrderCreate(BaseModel):
+    market_id: str
+    side: Literal["YES", "NO"]
+    order_type: Literal["BUY", "SELL"]
+    token_amount: float  # Total tokens to spend (for BUY) or shares to sell (for SELL)
+
+
+class MarketOrderResponse(BaseModel):
+    shares_filled: int
+    tokens_spent: float
+    average_price: float
+    message: str
+
 class OrderResponse(BaseModel):
     id: str
     market_id: str
@@ -149,6 +163,51 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     entries: list[LeaderboardEntry]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+# Admin Management Models
+class UserListEntry(BaseModel):
+    id: str
+    email: str
+    name: str
+    is_admin: bool
+    token_balance: float
+
+
+class UserListResponse(BaseModel):
+    users: list[UserListEntry]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class MakeAdminRequest(BaseModel):
+    email: str
+
+
+# Market Ideas Models
+class MarketIdeaCreate(BaseModel):
+    title: str
+    description: str
+
+
+class MarketIdeaResponse(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    title: str
+    description: str
+    status: Literal["pending", "approved", "rejected"]
+    created_at: datetime
+
+
+class MarketIdeasListResponse(BaseModel):
+    ideas: list[MarketIdeaResponse]
     total: int
     page: int
     page_size: int

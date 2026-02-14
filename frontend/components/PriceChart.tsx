@@ -39,11 +39,28 @@ export default function PriceChart({ marketId }: PriceChartProps) {
     };
   }, [marketId]);
 
-  const formatData = priceHistory.map((point) => ({
-    time: new Date(point.timestamp).toLocaleTimeString(),
-    YES: (point.yes_price * 100).toFixed(1),
-    NO: (point.no_price * 100).toFixed(1),
-  }));
+  const timeSpanMs = priceHistory.length > 1
+    ? new Date(priceHistory[priceHistory.length - 1]!.timestamp).getTime() -
+      new Date(priceHistory[0]!.timestamp).getTime()
+    : 0;
+
+  const formatData = priceHistory.map((point) => {
+    const d = new Date(point.timestamp);
+    const timeStr =
+      timeSpanMs >= 24 * 60 * 60 * 1000
+        ? d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : timeSpanMs >= 60 * 60 * 1000
+          ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+          : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    return {
+      time: timeStr,
+      YES: (point.yes_price * 100).toFixed(1),
+      NO: (point.no_price * 100).toFixed(1),
+    };
+  });
+
+  const dataLength = formatData.length;
+  const xAxisInterval = dataLength <= 6 ? 0 : Math.floor((dataLength - 1) / 5);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -53,12 +70,12 @@ export default function PriceChart({ marketId }: PriceChartProps) {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={formatData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
+            <XAxis dataKey="time" interval={xAxisInterval} />
             <YAxis domain={[0, 100]} />
             <Tooltip />
             <Legend />
-            <Line type="monotone" dataKey="YES" stroke="#10b981" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="NO" stroke="#ef4444" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="YES" stroke="#10b981" strokeWidth={2} dot={false} activeDot={false} />
+            <Line type="monotone" dataKey="NO" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={false} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
@@ -66,17 +83,6 @@ export default function PriceChart({ marketId }: PriceChartProps) {
           <p>No trades yet. Prices will appear as trades execute.</p>
         </div>
       )}
-
-      <div className="mt-4 flex justify-center space-x-6 text-sm">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span className="text-gray-600">YES</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span className="text-gray-600">NO</span>
-        </div>
-      </div>
     </div>
   );
 }

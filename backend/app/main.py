@@ -40,6 +40,20 @@ orders.set_sio(sio)
 async def startup_event():
     """Connect to MongoDB on startup"""
     await connect_to_mongo()
+
+    # Set initial admin users
+    from app.database import get_database
+    db = await get_database()
+
+    initial_admins = ["advayratan@gmail.com"]
+    for email in initial_admins:
+        result = await db.users.update_one(
+            {"email": email},
+            {"$set": {"is_admin": True}}
+        )
+        if result.modified_count > 0:
+            print(f"Set {email} as admin")
+
     print("Application started successfully")
 
 
