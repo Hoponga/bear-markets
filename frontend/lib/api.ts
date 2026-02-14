@@ -89,6 +89,33 @@ export const marketsAPI = {
   resolve: async (marketId: string, outcome: 'YES' | 'NO'): Promise<void> => {
     await api.post(`/api/markets/${marketId}/resolve`, { outcome });
   },
+
+  // Private markets
+  createPrivate: async (
+    title: string,
+    description: string,
+    resolutionDate: string,
+    initialTokenBalance: number = 1000
+  ): Promise<Market> => {
+    const { data } = await api.post('/api/markets/private', {
+      title,
+      description,
+      resolution_date: resolutionDate,
+      initial_token_balance: initialTokenBalance,
+      is_private: true,
+    });
+    return data;
+  },
+
+  joinPrivate: async (inviteCode: string): Promise<Market> => {
+    const { data } = await api.post(`/api/markets/join/${inviteCode}`);
+    return data;
+  },
+
+  getMyPrivateMarkets: async (): Promise<Market[]> => {
+    const { data} = await api.get('/api/markets/private/my-markets');
+    return data;
+  },
 };
 
 // Orders endpoints

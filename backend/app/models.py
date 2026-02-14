@@ -44,6 +44,13 @@ class MarketCreate(BaseModel):
     description: str
     resolution_date: datetime
 
+class PrivateMarketCreate(BaseModel):
+    title: str
+    description: str
+    resolution_date: datetime
+    initial_token_balance: int = 1000  # How many tokens users start with
+    is_private: bool = True
+
 class MarketResponse(BaseModel):
     id: str
     title: str
@@ -55,6 +62,8 @@ class MarketResponse(BaseModel):
     current_yes_price: float
     current_no_price: float
     total_volume: float
+    is_private: bool = False
+    invite_code: Optional[str] = None  # For sharing private markets
 
 class MarketResolve(BaseModel):
     outcome: Literal["YES", "NO"]

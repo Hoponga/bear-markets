@@ -3,7 +3,7 @@ from typing import List
 from bson import ObjectId
 from datetime import datetime
 
-from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookResponse
+from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookResponse, PrivateMarketCreate
 from app.auth import get_current_user, get_current_admin
 from app.database import get_database
 
@@ -12,10 +12,10 @@ router = APIRouter(prefix="/api/markets", tags=["markets"])
 
 @router.get("", response_model=List[MarketResponse])
 async def list_markets(status_filter: str = "active"):
-    """List all markets"""
+    """List all PUBLIC markets (private markets not included)"""
     db = await get_database()
 
-    query = {}
+    query = {"is_private": {"$ne": True}}  # Exclude private markets
     if status_filter:
         query["status"] = status_filter
 
@@ -33,7 +33,9 @@ async def list_markets(status_filter: str = "active"):
             resolved_outcome=market.get("resolved_outcome"),
             current_yes_price=market.get("current_yes_price", 0.5),
             current_no_price=market.get("current_no_price", 0.5),
-            total_volume=market.get("total_volume", 0.0)
+            total_volume=market.get("total_volume", 0.0),
+            is_private=market.get("is_private", False),
+            invite_code=market.get("invite_code")
         ))
 
     return markets
@@ -62,7 +64,9 @@ async def get_market(market_id: str):
         resolved_outcome=market.get("resolved_outcome"),
         current_yes_price=market.get("current_yes_price", 0.5),
         current_no_price=market.get("current_no_price", 0.5),
-        total_volume=market.get("total_volume", 0.0)
+        total_volume=market.get("total_volume", 0.0),
+        is_private=market.get("is_private", False),
+        invite_code=market.get("invite_code")
     )
 
 
@@ -182,3 +186,125 @@ async def resolve_market(
     )
 
     return {"message": f"Market resolved as {resolution.outcome}"}
+
+# Private Markets Endpoints
+
+@router.post("/private", response_model=MarketResponse)
+async def create_private_market(
+    market_data: PrivateMarketCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a private market with custom settings (any user can create)"""
+    import secrets
+    db = await get_database()
+
+    # Generate unique invite code
+    invite_code = secrets.token_urlsafe(16)
+
+    market_dict = {
+        "title": market_data.title,
+        "description": market_data.description,
+        "created_by": current_user["_id"],
+        "created_at": datetime.utcnow(),
+        "resolution_date": market_data.resolution_date,
+        "status": "active",
+        "resolved_outcome": None,
+        "current_yes_price": 0.5,
+        "current_no_price": 0.5,
+        "total_volume": 0.0,
+        "is_private": True,
+        "invite_code": invite_code,
+        "initial_token_balance": market_data.initial_token_balance,
+        "participants": [current_user["_id"]]  # Creator is first participant
+    }
+
+    result = await db.markets.insert_one(market_dict)
+
+    return MarketResponse(
+        id=str(result.inserted_id),
+        title=market_data.title,
+        description=market_data.description,
+        created_at=market_dict["created_at"],
+        resolution_date=market_data.resolution_date,
+        status="active",
+        resolved_outcome=None,
+        current_yes_price=0.5,
+        current_no_price=0.5,
+        total_volume=0.0,
+        is_private=True,
+        invite_code=invite_code
+    )
+
+
+@router.post("/join/{invite_code}", response_model=MarketResponse)
+async def join_private_market(
+    invite_code: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Join a private market using an invite code"""
+    db = await get_database()
+
+    market = await db.markets.find_one({"invite_code": invite_code, "is_private": True})
+
+    if not market:
+        raise HTTPException(status_code=404, detail="Invalid invite code")
+
+    # Add user to participants if not already there
+    if current_user["_id"] not in market.get("participants", []):
+        await db.markets.update_one(
+            {"_id": market["_id"]},
+            {"$addToSet": {"participants": current_user["_id"]}}
+        )
+
+        # Give user initial tokens for this private market (create separate balance tracking)
+        initial_balance = market.get("initial_token_balance", 1000)
+        await db.private_balances.update_one(
+            {"user_id": current_user["_id"], "market_id": market["_id"]},
+            {"$setOnInsert": {"balance": initial_balance}},
+            upsert=True
+        )
+
+    return MarketResponse(
+        id=str(market["_id"]),
+        title=market["title"],
+        description=market["description"],
+        created_at=market["created_at"],
+        resolution_date=market["resolution_date"],
+        status=market["status"],
+        resolved_outcome=market.get("resolved_outcome"),
+        current_yes_price=market.get("current_yes_price", 0.5),
+        current_no_price=market.get("current_no_price", 0.5),
+        total_volume=market.get("total_volume", 0.0),
+        is_private=True,
+        invite_code=market["invite_code"]
+    )
+
+
+@router.get("/private/my-markets", response_model=List[MarketResponse])
+async def get_my_private_markets(current_user: dict = Depends(get_current_user)):
+    """Get all private markets the current user has access to"""
+    db = await get_database()
+
+    markets_cursor = db.markets.find({
+        "is_private": True,
+        "participants": current_user["_id"]
+    }).sort("created_at", -1)
+
+    markets = []
+    async for market in markets_cursor:
+        markets.append(MarketResponse(
+            id=str(market["_id"]),
+            title=market["title"],
+            description=market["description"],
+            created_at=market["created_at"],
+            resolution_date=market["resolution_date"],
+            status=market["status"],
+            resolved_outcome=market.get("resolved_outcome"),
+            current_yes_price=market.get("current_yes_price", 0.5),
+            current_no_price=market.get("current_no_price", 0.5),
+            total_volume=market.get("total_volume", 0.0),
+            is_private=True,
+            invite_code=market.get("invite_code")
+        ))
+
+    return markets
