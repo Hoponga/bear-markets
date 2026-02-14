@@ -136,6 +136,13 @@ async def attempt_share_minting(
         trade["_id"] = result.inserted_id
         trades.append(trade)
 
+        # Update market volume - for minting, both sides cost $1 total per share
+        trade_volume = 1.0 * mint_quantity  # YES + NO prices always sum to $1
+        await db.markets.update_one(
+            {"_id": market_id},
+            {"$inc": {"total_volume": trade_volume}}
+        )
+
         # Update totals
         total_filled += mint_quantity
         remaining_quantity -= mint_quantity

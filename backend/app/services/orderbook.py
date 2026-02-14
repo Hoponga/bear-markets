@@ -109,6 +109,13 @@ async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
         }
         await db.trades.insert_one(trade)
 
+        # Update market volume
+        trade_volume = execution_price * trade_quantity
+        await db.markets.update_one(
+            {"_id": market_id},
+            {"$inc": {"total_volume": trade_volume}}
+        )
+
         total_filled += trade_quantity
         remaining_quantity -= trade_quantity
 
@@ -230,6 +237,13 @@ async def match_sell_order(db, market_id: ObjectId, sell_order: dict, sio) -> in
             "executed_at": datetime.utcnow()
         }
         await db.trades.insert_one(trade)
+
+        # Update market volume
+        trade_volume = execution_price * trade_quantity
+        await db.markets.update_one(
+            {"_id": market_id},
+            {"$inc": {"total_volume": trade_volume}}
+        )
 
         total_filled += trade_quantity
         remaining_quantity -= trade_quantity
