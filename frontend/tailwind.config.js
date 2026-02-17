@@ -10,8 +10,8 @@ module.exports = {
       colors: {
         // Background colors
         bg: {
-          primary: '#111111',    // Main page background (gray-900)
-          card: '#0a0a0a',       // Card backgrounds (gray-800)
+          primary: '#0a0a0a',    // Main page background (gray-900)
+          card: '#111111',       // Card backgrounds (gray-800)
           hover: '#1e1e1e',      // Hover states (gray-700)
           input: '#1e1e1e',      // Input backgrounds (gray-700)
         },

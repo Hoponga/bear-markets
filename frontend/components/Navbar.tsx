@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { authStorage } from '@/lib/auth';
 import { authAPI } from '@/lib/api';
 import AuthModal from './AuthModal';
@@ -48,73 +49,69 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-bg-card border-b border-border-primary sticky top-0 z-50">
+      <nav className="bg-transparent sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3">
-              <span className="text-2xl font-bold">📊</span>
-              <span className="text-xl font-bold text-text-primary">
-                Bear Markets
+          <div className="flex justify-between items-center h-12">
+            {/* Left - Logo */}
+            <Link href="/" className="flex items-center space-x-2">
+              <Image src="/logo.png" alt="Bearmarket" width={48} height={48} />
+              <span className="text-sm font-medium text-text-muted uppercase tracking-widest">
+                Bearmarket
               </span>
             </Link>
 
-            {/* Navigation Links */}
-            <div className="flex items-center space-x-6">
+            {/* Right - Navigation Links & User Info */}
+            <div className="flex items-center space-x-5">
               {user ? (
                 <>
                   <Link
                     href="/"
-                    className="text-text-secondary hover:text-text-primary font-medium transition"
+                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
                   >
                     Markets
                   </Link>
                   <Link
                     href="/portfolio"
-                    className="text-text-secondary hover:text-text-primary font-medium transition"
+                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
                   >
                     Portfolio
                   </Link>
                   <Link
                     href="/organizations"
-                    className="text-text-secondary hover:text-text-primary font-medium transition"
+                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
                   >
                     Organizations
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="text-text-secondary hover:text-text-primary font-medium transition"
+                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
                   >
                     Leaderboard
                   </Link>
-
-                  {/* User Info */}
-                  <div className="flex items-center space-x-4 border-l border-border-secondary pl-6">
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-text-primary">{user.name}</p>
-                      <p className="text-xs text-text-muted">
-                        {user.token_balance.toFixed(2)} tokens
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary border border-border-secondary rounded-lg hover:bg-bg-hover transition"
-                    >
-                      Logout
-                    </button>
-                  </div>
+                  <span className="text-xs text-text-muted">
+                    {user.name} · {user.token_balance.toFixed(2)} tokens
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-text-muted hover:text-text-secondary transition"
+                    title="Logout"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
                 </>
               ) : (
                 <>
                   <Link
                     href="/leaderboard"
-                    className="text-text-secondary hover:text-text-primary font-medium transition"
+                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
                   >
                     Leaderboard
                   </Link>
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
+                    className="px-4 py-1.5 text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide border border-border-secondary/50 rounded transition"
                   >
                     Sign In
                   </button>
