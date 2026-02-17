@@ -159,3 +159,49 @@ export interface MarketOrderResponse {
   average_price: number;
   message: string;
 }
+
+// Pool Bet Types
+export interface PoolBet {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string;
+  bet_type: 'fixed' | 'variable';
+  fixed_fee?: number;
+  min_fee?: number;
+  status: 'open' | 'locked' | 'resolved';
+  resolved_outcome?: 'YES' | 'NO';
+  yes_pool: number;
+  no_pool: number;
+  yes_count: number;
+  no_count: number;
+  created_by: string;
+  created_at: string;
+  user_bet?: {
+    side: 'YES' | 'NO';
+    amount: number;
+  };
+}
+
+export interface PoolBetEntry {
+  user_id: string;
+  user_name: string;
+  side: 'YES' | 'NO';
+  amount: number;
+  placed_at: string;
+}
+
+// Notification Types
+export interface Notification {
+  id: string;
+  message: string;
+  bet_id?: string;
+  organization_id?: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[];
+  unread_count: number;
+}

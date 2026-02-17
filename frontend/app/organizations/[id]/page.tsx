@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { organizationsAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
-import MarketCard from '@/components/MarketCard';
-import type { Organization, Market, LeaderboardEntry } from '@/types';
+import type { Organization, PoolBet, LeaderboardEntry, OrganizationMember } from '@/types';
 
 export default function OrganizationDetailPage() {
   const params = useParams();
@@ -14,18 +12,29 @@ export default function OrganizationDetailPage() {
   const orgId = params.id as string;
 
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const [bets, setBets] = useState<PoolBet[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'markets' | 'leaderboard'>('markets');
-  const [showCreateMarket, setShowCreateMarket] = useState(false);
+  const [activeTab, setActiveTab] = useState<'bets' | 'leaderboard' | 'admin'>('bets');
+  const [showCreateBet, setShowCreateBet] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Create market form
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [resolutionDate, setResolutionDate] = useState('');
+  // Create bet form
+  const [betTitle, setBetTitle] = useState('');
+  const [betDescription, setBetDescription] = useState('');
+  const [betType, setBetType] = useState<'fixed' | 'variable'>('fixed');
+  const [fixedFee, setFixedFee] = useState(10);
+  const [minFee, setMinFee] = useState(5);
+  const [seedYes, setSeedYes] = useState(10);
+  const [seedNo, setSeedNo] = useState(10);
   const [error, setError] = useState('');
+
+  // Join bet state
+  const [joiningBetId, setJoiningBetId] = useState<string | null>(null);
+  const [joinSide, setJoinSide] = useState<'YES' | 'NO'>('YES');
+  const [joinAmount, setJoinAmount] = useState(10);
 
   useEffect(() => {
     const user = authStorage.getUser();
@@ -33,9 +42,11 @@ export default function OrganizationDetailPage() {
       router.push('/');
       return;
     }
+    setCurrentUserId(user.id);
     loadOrganization();
-    loadMarkets();
+    loadBets();
     loadLeaderboard();
+    loadMembers();
   }, [orgId]);
 
   const loadOrganization = async () => {
@@ -49,42 +60,109 @@ export default function OrganizationDetailPage() {
     }
   };
 
-  const loadMarkets = async () => {
+  const loadBets = async () => {
     try {
-      const data = await organizationsAPI.getMarkets(orgId);
-      setMarkets(data);
+      const data = await organizationsAPI.getBets(orgId);
+      setBets(data);
     } catch (err) {
-      console.error('Failed to load markets', err);
+      console.error('Failed to load bets', err);
     }
   };
 
   const loadLeaderboard = async () => {
     try {
-      setLeaderboardLoading(true);
       const data = await organizationsAPI.getLeaderboard(orgId);
-      console.log('Leaderboard data:', data); // Debug log
       setLeaderboard(data.entries || []);
     } catch (err) {
       console.error('Failed to load leaderboard', err);
-      setLeaderboard([]);
-    } finally {
-      setLeaderboardLoading(false);
     }
   };
 
-  const handleCreateMarket = async (e: React.FormEvent) => {
+  const loadMembers = async () => {
+    try {
+      const data = await organizationsAPI.getMembers(orgId);
+      setMembers(data);
+      const user = authStorage.getUser();
+      const currentMember = data.find((m: OrganizationMember) => m.user_id === user?.id);
+      setIsAdmin(currentMember?.is_admin || false);
+    } catch (err) {
+      console.error('Failed to load members', err);
+    }
+  };
+
+  const handleCreateBet = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      await organizationsAPI.createMarket(orgId, title, description, resolutionDate);
-      setShowCreateMarket(false);
-      setTitle('');
-      setDescription('');
-      setResolutionDate('');
-      await loadMarkets();
+      await organizationsAPI.createBet(orgId, betTitle, betDescription, betType, {
+        fixedFee: betType === 'fixed' ? fixedFee : undefined,
+        minFee: betType === 'variable' ? minFee : undefined,
+        seedYes: betType === 'variable' ? seedYes : undefined,
+        seedNo: betType === 'variable' ? seedNo : undefined,
+      });
+      setShowCreateBet(false);
+      setBetTitle('');
+      setBetDescription('');
+      await loadBets();
+      await loadOrganization();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create market');
+      setError(err.response?.data?.detail || 'Failed to create bet');
+    }
+  };
+
+  const handleJoinBet = async (betId: string) => {
+    try {
+      const bet = bets.find(b => b.id === betId);
+      await organizationsAPI.joinBet(orgId, betId, joinSide, bet?.bet_type === 'variable' ? joinAmount : undefined);
+      setJoiningBetId(null);
+      await loadBets();
+      await loadOrganization();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to join bet');
+    }
+  };
+
+  const handleLockBet = async (betId: string) => {
+    try {
+      await organizationsAPI.lockBet(orgId, betId);
+      await loadBets();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to lock bet');
+    }
+  };
+
+  const handleResolveBet = async (betId: string, outcome: 'YES' | 'NO') => {
+    if (!confirm(`Resolve this bet as ${outcome}?`)) return;
+    try {
+      await organizationsAPI.resolveBet(orgId, betId, outcome);
+      await loadBets();
+      await loadOrganization();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to resolve bet');
+    }
+  };
+
+  const handleUndoBet = async (betId: string) => {
+    if (!confirm('Undo this resolution and refund everyone?')) return;
+    try {
+      await organizationsAPI.undoBet(orgId, betId);
+      await loadBets();
+      await loadOrganization();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to undo bet');
+    }
+  };
+
+  const handleEditBalance = async (userId: string, currentBalance: number) => {
+    const newBalance = prompt('Enter new balance:', currentBalance.toString());
+    if (newBalance === null) return;
+    try {
+      await organizationsAPI.editMemberBalance(orgId, userId, parseFloat(newBalance));
+      await loadMembers();
+      await loadLeaderboard();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to update balance');
     }
   };
 
@@ -92,7 +170,7 @@ export default function OrganizationDetailPage() {
     if (!organization) return;
     const link = `${window.location.origin}/organizations/join?org=${orgId}&code=${organization.invite_code}`;
     navigator.clipboard.writeText(link);
-    alert('Invite link copied to clipboard!');
+    alert('Invite link copied!');
   };
 
   if (loading || !organization) {
@@ -108,228 +186,254 @@ export default function OrganizationDetailPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 mb-8">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-4xl font-semibold text-text-primary mb-2">{organization.name}</h1>
-            <p className="text-lg text-text-muted">{organization.description}</p>
-          </div>
-          <button
-            onClick={copyInviteLink}
-            className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
-          >
-            📋 Copy Invite Link
+      <div className="mb-8">
+        <div className="flex justify-between items-start mb-2">
+          <h1 className="text-3xl font-bold text-text-primary">{organization.name}</h1>
+          <button onClick={copyInviteLink} className="text-sm text-text-muted hover:text-text-primary">
+            Copy Invite Link
           </button>
         </div>
-
-        <div className="flex space-x-6 text-sm">
-          <span className="text-text-disabled">{organization.member_count} members</span>
-          <span className="text-text-disabled">{organization.initial_token_balance} initial tokens</span>
-          <span className="text-text-primary font-semibold">💰 {organization.user_token_balance.toFixed(2)} your tokens</span>
-          <span className="text-text-disabled">Created {new Date(organization.created_at).toLocaleDateString()}</span>
+        <p className="text-text-muted mb-3">{organization.description}</p>
+        <div className="flex space-x-4 text-sm text-text-disabled">
+          <span>{organization.member_count} members</span>
+          <span className="text-text-primary font-medium">{organization.user_token_balance.toFixed(0)} tokens</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-border-secondary mb-8">
-        <div className="flex space-x-8">
+      <div className="border-b border-border-secondary mb-6">
+        <div className="flex space-x-6">
           <button
-            onClick={() => setActiveTab('markets')}
-            className={`pb-4 px-1 font-medium transition ${
-              activeTab === 'markets'
-                ? 'border-b-2 border-text-primary text-text-primary'
-                : 'text-text-muted hover:text-text-secondary'
-            }`}
+            onClick={() => setActiveTab('bets')}
+            className={`pb-3 text-sm font-medium transition ${activeTab === 'bets' ? 'border-b-2 border-text-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
           >
-            Markets
+            Bets
           </button>
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`pb-4 px-1 font-medium transition ${
-              activeTab === 'leaderboard'
-                ? 'border-b-2 border-text-primary text-text-primary'
-                : 'text-text-muted hover:text-text-secondary'
-            }`}
+            className={`pb-3 text-sm font-medium transition ${activeTab === 'leaderboard' ? 'border-b-2 border-text-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
           >
             Leaderboard
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`pb-3 text-sm font-medium transition ${activeTab === 'admin' ? 'border-b-2 border-text-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
+            >
+              Admin
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Markets Tab */}
-      {activeTab === 'markets' && (
+      {/* Bets Tab */}
+      {activeTab === 'bets' && (
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-medium text-text-primary">Markets</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-text-primary">Pool Bets</h2>
             <button
-              onClick={() => setShowCreateMarket(!showCreateMarket)}
-              className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
+              onClick={() => setShowCreateBet(!showCreateBet)}
+              className="text-sm text-text-muted hover:text-text-primary"
             >
-              + Create Market
+              {showCreateBet ? 'Cancel' : '+ Create Bet'}
             </button>
           </div>
 
-          {/* Create Market Form */}
-          {showCreateMarket && (
-            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-6">
-              <h3 className="text-xl font-medium text-text-primary mb-4">Create Market</h3>
-              <form onSubmit={handleCreateMarket} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Market Question
+          {/* Create Bet Form */}
+          {showCreateBet && (
+            <div className="bg-bg-card rounded-lg border border-border-primary p-4 mb-6">
+              <form onSubmit={handleCreateBet} className="space-y-3">
+                <input
+                  type="text"
+                  value={betTitle}
+                  onChange={(e) => setBetTitle(e.target.value)}
+                  placeholder="What are you betting on?"
+                  className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded text-sm"
+                  required
+                />
+                <textarea
+                  value={betDescription}
+                  onChange={(e) => setBetDescription(e.target.value)}
+                  placeholder="Description / resolution criteria"
+                  className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded text-sm"
+                  rows={2}
+                />
+                <div className="flex space-x-4">
+                  <label className="flex items-center text-sm text-text-secondary">
+                    <input type="radio" checked={betType === 'fixed'} onChange={() => setBetType('fixed')} className="mr-2" />
+                    Fixed fee (everyone pays same)
                   </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Description
+                  <label className="flex items-center text-sm text-text-secondary">
+                    <input type="radio" checked={betType === 'variable'} onChange={() => setBetType('variable')} className="mr-2" />
+                    Variable (bet any amount)
                   </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
-                    rows={3}
-                    required
-                  />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Resolution Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={resolutionDate}
-                    onChange={(e) => setResolutionDate(e.target.value)}
-                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
-                    required
-                  />
-                </div>
-                {error && (
-                  <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
-                    <p className="text-sm text-red-400">{error}</p>
+                {betType === 'fixed' ? (
+                  <div>
+                    <label className="block text-xs text-text-muted mb-1">Entry fee</label>
+                    <input type="number" value={fixedFee} onChange={(e) => setFixedFee(Number(e.target.value))} min="1" className="w-32 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
+                  </div>
+                ) : (
+                  <div className="flex space-x-4">
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">Min bet</label>
+                      <input type="number" value={minFee} onChange={(e) => setMinFee(Number(e.target.value))} min="1" className="w-24 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">Your seed (YES)</label>
+                      <input type="number" value={seedYes} onChange={(e) => setSeedYes(Number(e.target.value))} min="1" className="w-24 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">Your seed (NO)</label>
+                      <input type="number" value={seedNo} onChange={(e) => setSeedNo(Number(e.target.value))} min="1" className="w-24 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
+                    </div>
                   </div>
                 )}
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
-                  >
-                    Create
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateMarket(false)}
-                    className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                {error && <p className="text-sm text-red-400">{error}</p>}
+                <button type="submit" className="px-4 py-2 bg-btn-primary text-text-primary text-sm rounded hover:bg-btn-primary-hover">
+                  Create Bet
+                </button>
               </form>
             </div>
           )}
 
-          {/* Markets Grid */}
-          {markets.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {markets.map((market) => (
-                <MarketCard key={market.id} market={market} />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
-              <p className="text-text-muted mb-4">No markets yet in this organization.</p>
-              <button
-                onClick={() => setShowCreateMarket(true)}
-                className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
-              >
-                Create First Market
-              </button>
-            </div>
-          )}
+          {/* Bets List */}
+          <div className="space-y-4">
+            {bets.length === 0 ? (
+              <p className="text-text-muted text-center py-8">No bets yet. Create one to get started!</p>
+            ) : (
+              bets.map((bet) => (
+                <div key={bet.id} className="bg-bg-card rounded-lg border border-border-primary p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-medium text-text-primary">{bet.title}</h3>
+                      {bet.description && <p className="text-sm text-text-muted">{bet.description}</p>}
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded ${bet.status === 'open' ? 'bg-green-900/30 text-green-400' : bet.status === 'locked' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-gray-700 text-gray-300'}`}>
+                      {bet.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="flex space-x-6 text-sm mb-3">
+                    <span className="text-green-400">YES: {bet.yes_pool.toFixed(0)} ({bet.yes_count})</span>
+                    <span className="text-red-400">NO: {bet.no_pool.toFixed(0)} ({bet.no_count})</span>
+                    <span className="text-text-muted">{bet.bet_type === 'fixed' ? `${bet.fixed_fee} per entry` : `min ${bet.min_fee}`}</span>
+                  </div>
+
+                  {bet.resolved_outcome && (
+                    <p className="text-sm mb-3">Resolved: <span className={bet.resolved_outcome === 'YES' ? 'text-green-400' : 'text-red-400'}>{bet.resolved_outcome}</span></p>
+                  )}
+
+                  {bet.user_bet && (
+                    <p className="text-sm text-text-muted mb-3">You bet {bet.user_bet.amount} on {bet.user_bet.side}</p>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    {bet.status === 'open' && !bet.user_bet && (
+                      joiningBetId === bet.id ? (
+                        <div className="flex items-center space-x-2">
+                          <select value={joinSide} onChange={(e) => setJoinSide(e.target.value as 'YES' | 'NO')} className="px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm">
+                            <option value="YES">YES</option>
+                            <option value="NO">NO</option>
+                          </select>
+                          {bet.bet_type === 'variable' && (
+                            <input type="number" value={joinAmount} onChange={(e) => setJoinAmount(Number(e.target.value))} min={bet.min_fee} className="w-20 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
+                          )}
+                          <button onClick={() => handleJoinBet(bet.id)} className="px-3 py-1 bg-btn-primary text-text-primary text-sm rounded">Confirm</button>
+                          <button onClick={() => setJoiningBetId(null)} className="text-sm text-text-muted">Cancel</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setJoiningBetId(bet.id)} className="px-3 py-1 bg-btn-primary text-text-primary text-sm rounded">Join Bet</button>
+                      )
+                    )}
+
+                    {bet.created_by === currentUserId && bet.status === 'open' && (
+                      <button onClick={() => handleLockBet(bet.id)} className="px-3 py-1 border border-border-secondary text-text-muted text-sm rounded hover:text-text-primary">Lock</button>
+                    )}
+
+                    {bet.created_by === currentUserId && (bet.status === 'open' || bet.status === 'locked') && (
+                      <>
+                        <button onClick={() => handleResolveBet(bet.id, 'YES')} className="px-3 py-1 border border-green-700 text-green-400 text-sm rounded hover:bg-green-900/30">Resolve YES</button>
+                        <button onClick={() => handleResolveBet(bet.id, 'NO')} className="px-3 py-1 border border-red-700 text-red-400 text-sm rounded hover:bg-red-900/30">Resolve NO</button>
+                      </>
+                    )}
+
+                    {isAdmin && bet.status === 'resolved' && (
+                      <button onClick={() => handleUndoBet(bet.id)} className="px-3 py-1 border border-border-secondary text-text-muted text-sm rounded hover:text-text-primary">Undo Resolution</button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
       {/* Leaderboard Tab */}
       {activeTab === 'leaderboard' && (
         <div>
-          <h2 className="text-2xl font-medium text-text-primary mb-6">Leaderboard</h2>
-
-          {leaderboardLoading ? (
-            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted mb-4"></div>
-              <p className="text-text-muted">Loading leaderboard...</p>
-            </div>
-          ) : leaderboard.length > 0 ? (
-            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
-              <table className="min-w-full divide-y divide-border-secondary">
+          <h2 className="text-lg font-medium text-text-primary mb-4">Leaderboard</h2>
+          {leaderboard.length > 0 ? (
+            <div className="bg-bg-card rounded-lg border border-border-primary overflow-hidden">
+              <table className="min-w-full">
                 <thead className="bg-bg-hover">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
-                      Rank
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
-                      Token Balance
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
-                      Position Value
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
-                      Total Value
-                    </th>
+                    <th className="px-4 py-2 text-left text-xs text-text-disabled">#</th>
+                    <th className="px-4 py-2 text-left text-xs text-text-disabled">Name</th>
+                    <th className="px-4 py-2 text-left text-xs text-text-disabled">Tokens</th>
                   </tr>
                 </thead>
-                <tbody className="bg-bg-card divide-y divide-border-secondary">
+                <tbody>
                   {leaderboard.map((entry) => (
-                    <tr key={entry.user_id} className="hover:bg-bg-hover">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`text-2xl font-bold ${
-                            entry.rank === 1
-                              ? 'text-yellow-500'
-                              : entry.rank === 2
-                              ? 'text-gray-400'
-                              : entry.rank === 3
-                              ? 'text-orange-600'
-                              : 'text-text-primary'
-                          }`}
-                        >
-                          {entry.rank}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-text-primary">{entry.name}</div>
-                        <div className="text-xs text-text-disabled">{entry.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                        ${entry.token_balance.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                        ${entry.position_value.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-lg font-bold text-text-primary">
-                          ${entry.total_value.toFixed(2)}
-                        </span>
-                      </td>
+                    <tr key={entry.user_id} className="border-t border-border-secondary">
+                      <td className="px-4 py-2 text-text-primary font-bold">{entry.rank}</td>
+                      <td className="px-4 py-2 text-text-primary">{entry.name}</td>
+                      <td className="px-4 py-2 text-text-primary">{entry.token_balance.toFixed(0)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
-              <p className="text-text-muted">No members in this organization yet.</p>
-            </div>
+            <p className="text-text-muted text-center py-8">No members yet.</p>
           )}
+        </div>
+      )}
+
+      {/* Admin Tab */}
+      {activeTab === 'admin' && isAdmin && (
+        <div>
+          <h2 className="text-lg font-medium text-text-primary mb-4">Manage Members</h2>
+          <div className="bg-bg-card rounded-lg border border-border-primary overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-bg-hover">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs text-text-disabled">Name</th>
+                  <th className="px-4 py-2 text-left text-xs text-text-disabled">Email</th>
+                  <th className="px-4 py-2 text-left text-xs text-text-disabled">Balance</th>
+                  <th className="px-4 py-2 text-left text-xs text-text-disabled">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <tr key={member.user_id} className="border-t border-border-secondary">
+                    <td className="px-4 py-2 text-text-primary">{member.user_name}</td>
+                    <td className="px-4 py-2 text-text-muted text-sm">{member.user_email}</td>
+                    <td className="px-4 py-2 text-text-primary">{member.token_balance.toFixed(0)}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => handleEditBalance(member.user_id, member.token_balance)}
+                        className="text-sm text-text-muted hover:text-text-primary"
+                      >
+                        Edit Balance
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

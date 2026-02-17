@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 
 from app.database import connect_to_mongo, close_mongo_connection
-from app.routers import users, markets, orders, organizations
+from app.routers import users, markets, orders, organizations, pool_bets, notifications
 from app.websocket import sio
 
 load_dotenv()
@@ -32,6 +32,8 @@ app.include_router(users.router)
 app.include_router(markets.router)
 app.include_router(orders.router)
 app.include_router(organizations.router)
+app.include_router(pool_bets.router)
+app.include_router(notifications.router)
 
 # Set Socket.IO reference in orders router
 orders.set_sio(sio)

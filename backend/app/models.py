@@ -248,3 +248,71 @@ class OrganizationLeaderboardResponse(BaseModel):
     entries: list[LeaderboardEntry]
     organization_id: str
     organization_name: str
+
+
+# Pool Bet Models
+class PoolBetCreate(BaseModel):
+    title: str
+    description: str
+    bet_type: Literal["fixed", "variable"]
+    fixed_fee: Optional[float] = None  # Required for fixed type
+    min_fee: Optional[float] = None  # Required for variable type
+    seed_yes: Optional[float] = None  # Required for variable type (creator's seed on YES)
+    seed_no: Optional[float] = None  # Required for variable type (creator's seed on NO)
+
+
+class PoolBetResponse(BaseModel):
+    id: str
+    organization_id: str
+    title: str
+    description: str
+    bet_type: Literal["fixed", "variable"]
+    fixed_fee: Optional[float] = None
+    min_fee: Optional[float] = None
+    status: Literal["open", "locked", "resolved"]
+    resolved_outcome: Optional[Literal["YES", "NO"]] = None
+    yes_pool: float
+    no_pool: float
+    yes_count: int  # Number of YES bettors
+    no_count: int  # Number of NO bettors
+    created_by: str
+    created_at: datetime
+    user_bet: Optional[dict] = None  # Current user's bet if any
+
+
+class PoolBetJoin(BaseModel):
+    side: Literal["YES", "NO"]
+    amount: Optional[float] = None  # Only for variable type
+
+
+class PoolBetEntryResponse(BaseModel):
+    user_id: str
+    user_name: str
+    side: Literal["YES", "NO"]
+    amount: float
+    placed_at: datetime
+
+
+class PoolBetResolve(BaseModel):
+    outcome: Literal["YES", "NO"]
+
+
+# Notification/Inbox Models
+class NotificationResponse(BaseModel):
+    id: str
+    message: str
+    bet_id: Optional[str] = None
+    organization_id: Optional[str] = None
+    read: bool
+    created_at: datetime
+
+
+class NotificationsListResponse(BaseModel):
+    notifications: list[NotificationResponse]
+    unread_count: int
+
+
+# Admin: Edit member balance
+class EditMemberBalanceRequest(BaseModel):
+    user_id: str
+    new_balance: float

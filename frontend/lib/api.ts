@@ -282,4 +282,86 @@ export const organizationsAPI = {
     const { data } = await api.get(`/api/organizations/${orgId}/markets`);
     return data;
   },
+
+  // Pool Bets
+  createBet: async (orgId: string, title: string, description: string, betType: 'fixed' | 'variable', options: {
+    fixedFee?: number;
+    minFee?: number;
+    seedYes?: number;
+    seedNo?: number;
+  }) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets`, {
+      title,
+      description,
+      bet_type: betType,
+      fixed_fee: options.fixedFee,
+      min_fee: options.minFee,
+      seed_yes: options.seedYes,
+      seed_no: options.seedNo,
+    });
+    return data;
+  },
+
+  getBets: async (orgId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/bets`);
+    return data;
+  },
+
+  getBet: async (orgId: string, betId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/bets/${betId}`);
+    return data;
+  },
+
+  joinBet: async (orgId: string, betId: string, side: 'YES' | 'NO', amount?: number) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/join`, {
+      side,
+      amount,
+    });
+    return data;
+  },
+
+  lockBet: async (orgId: string, betId: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/lock`);
+    return data;
+  },
+
+  resolveBet: async (orgId: string, betId: string, outcome: 'YES' | 'NO') => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/resolve`, {
+      outcome,
+    });
+    return data;
+  },
+
+  undoBet: async (orgId: string, betId: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/undo`);
+    return data;
+  },
+
+  getBetEntries: async (orgId: string, betId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/bets/${betId}/entries`);
+    return data;
+  },
+
+  editMemberBalance: async (orgId: string, userId: string, newBalance: number) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/members/${userId}/balance?new_balance=${newBalance}`);
+    return data;
+  },
+};
+
+// Notifications
+export const notificationsAPI = {
+  getAll: async () => {
+    const { data } = await api.get('/api/notifications');
+    return data;
+  },
+
+  markRead: async (notificationId: string) => {
+    const { data } = await api.post(`/api/notifications/${notificationId}/read`);
+    return data;
+  },
+
+  markAllRead: async () => {
+    const { data } = await api.post('/api/notifications/read-all');
+    return data;
+  },
 };
