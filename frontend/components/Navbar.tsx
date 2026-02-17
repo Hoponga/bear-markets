@@ -76,10 +76,10 @@ export default function Navbar() {
                     Portfolio
                   </Link>
                   <Link
-                    href="/private-markets"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition"
+                    href="/organizations"
+                    className="text-gray-300 hover:text-blue-400 font-medium transition"
                   >
-                    🔒 Private
+                    🏢 Organizations
                   </Link>
                   <Link
                     href="/leaderboard"

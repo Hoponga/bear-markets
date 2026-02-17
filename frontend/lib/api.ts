@@ -232,3 +232,54 @@ export const marketIdeasAPI = {
 };
 
 export default api;
+
+// Organizations endpoints
+export const organizationsAPI = {
+  create: async (name: string, description: string, initialTokenBalance: number = 1000) => {
+    const { data } = await api.post('/api/organizations', {
+      name,
+      description,
+      initial_token_balance: initialTokenBalance,
+    });
+    return data;
+  },
+
+  list: async () => {
+    const { data } = await api.get('/api/organizations');
+    return data;
+  },
+
+  get: async (orgId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}`);
+    return data;
+  },
+
+  join: async (orgId: string, inviteCode: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/join/${inviteCode}`);
+    return data;
+  },
+
+  getMembers: async (orgId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/members`);
+    return data;
+  },
+
+  getLeaderboard: async (orgId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/leaderboard`);
+    return data;
+  },
+
+  createMarket: async (orgId: string, title: string, description: string, resolutionDate: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/markets`, {
+      title,
+      description,
+      resolution_date: resolutionDate,
+    });
+    return data;
+  },
+
+  getMarkets: async (orgId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/markets`);
+    return data;
+  },
+};

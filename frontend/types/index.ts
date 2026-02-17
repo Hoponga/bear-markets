@@ -17,8 +17,27 @@ export interface Market {
   current_yes_price: number;
   current_no_price: number;
   total_volume: number;
-  is_private?: boolean;
-  invite_code?: string;
+  organization_id?: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  description: string;
+  created_by: string;
+  created_at: string;
+  member_count: number;
+  invite_code: string;
+  initial_token_balance: number;
+}
+
+export interface OrganizationMember {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  token_balance: number;
+  joined_at: string;
+  is_admin: boolean;
 }
 
 export interface Order {
@@ -85,6 +104,7 @@ export interface LeaderboardEntry {
   rank: number;
   user_id: string;
   name: string;
+  email: string;
   token_balance: number;
   position_value: number;
   total_value: number;

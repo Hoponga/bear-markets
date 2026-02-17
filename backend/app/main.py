@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 
 from app.database import connect_to_mongo, close_mongo_connection
-from app.routers import users, markets, orders
+from app.routers import users, markets, orders, organizations
 from app.websocket import sio
 
 load_dotenv()
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(markets.router)
 app.include_router(orders.router)
+app.include_router(organizations.router)
 
 # Set Socket.IO reference in orders router
 orders.set_sio(sio)
