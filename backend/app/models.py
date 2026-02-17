@@ -44,13 +44,6 @@ class MarketCreate(BaseModel):
     description: str
     resolution_date: datetime
 
-class PrivateMarketCreate(BaseModel):
-    title: str
-    description: str
-    resolution_date: datetime
-    initial_token_balance: int = 1000  # How many tokens users start with
-    is_private: bool = True
-
 class MarketResponse(BaseModel):
     id: str
     title: str
@@ -62,8 +55,7 @@ class MarketResponse(BaseModel):
     current_yes_price: float
     current_no_price: float
     total_volume: float
-    is_private: bool = False
-    invite_code: Optional[str] = None  # For sharing private markets
+    organization_id: Optional[str] = None  # If part of an organization
 
 class MarketResolve(BaseModel):
     outcome: Literal["YES", "NO"]
@@ -221,3 +213,45 @@ class MarketIdeasListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+# Organization Models
+class OrganizationCreate(BaseModel):
+    name: str
+    description: str
+    initial_token_balance: int = 1000  # Tokens each member starts with
+
+class OrganizationResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    created_by: str
+    created_at: datetime
+    member_count: int
+    invite_code: str
+    initial_token_balance: int
+
+class OrganizationMemberResponse(BaseModel):
+    user_id: str
+    user_name: str
+    user_email: str
+    token_balance: float
+    joined_at: datetime
+    is_admin: bool
+
+class InviteUserRequest(BaseModel):
+    email: EmailStr
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user_id: str
+    name: str
+    email: str
+    token_balance: float
+    position_value: float  # Value of current positions
+    total_value: float  # token_balance + position_value
+
+class OrganizationLeaderboardResponse(BaseModel):
+    entries: list[LeaderboardEntry]
+    organization_id: str
+    organization_name: str
