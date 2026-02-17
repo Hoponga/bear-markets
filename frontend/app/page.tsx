@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { marketsAPI, marketIdeasAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
+import Link from 'next/link';
 import MarketCard from '@/components/MarketCard';
 import type { Market, User } from '@/types';
 
@@ -61,24 +62,21 @@ export default function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-text-primary mb-2">
-            Active Markets
-          </h1>
-          <p className="text-lg text-text-muted">
-            Trade on prediction markets at the number one public university in the world
-          </p>
-        </div>
-        {user && (
-          <button
-            onClick={() => setShowIdeaForm(!showIdeaForm)}
-            className="px-4 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition flex-shrink-0"
-          >
-            {showIdeaForm ? 'Cancel' : 'Suggest a Market'}
-          </button>
-        )}
+      {/* Introduction */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-text-primary mb-3">What is Bearmarket?</h1>
+        <p className="text-text-secondary mb-3">
+          Bearmarket is a free prediction market platform made for Berkeley where you can trade on the outcomes of future events.
+        </p>
+        <p className="text-text-muted text-sm mb-3">
+          Buy <span className="text-green-400 font-medium">YES</span> shares if you think something will happen, or <span className="text-red-400 font-medium">NO</span> if you don't. Prices reflect the crowd's probability—if YES trades at 70¢, the market thinks there's a 70% chance. When the event resolves, winning shares pay $1 each. You can also sell shares you own.
+        </p>
+        <p className="text-text-muted text-sm">
+          Want private markets with friends or your club? Check out <Link href="/organizations" className="text-text-secondary hover:text-text-primary underline">Organizations</Link>.{' '}
+          <Link href="/about" className="text-text-secondary hover:text-text-primary underline">Learn more</Link> about how it works{user && (
+            <>, or <button onClick={() => setShowIdeaForm(!showIdeaForm)} className="text-text-secondary hover:text-text-primary underline">{showIdeaForm ? 'cancel' : 'suggest a market'}</button></>
+          )}.
+        </p>
       </div>
 
       {/* Market Idea Form */}
