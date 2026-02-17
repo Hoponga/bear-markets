@@ -40,16 +40,16 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-700">
+      <div className="bg-bg-card rounded-xl shadow-2xl max-w-md w-full mx-4 border border-border-primary">
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-text-primary">
               {isLogin ? 'Sign In' : 'Create Account'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-200 text-2xl"
+              className="text-text-muted hover:text-text-secondary text-2xl"
             >
               ×
             </button>
@@ -59,41 +59,41 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">
                   Name
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                  className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                   required={!isLogin}
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 required
               />
             </div>
@@ -105,8 +105,8 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
             )}
 
             {!isLogin && (
-              <div className="p-3 bg-blue-900/50 border border-blue-700 rounded-lg">
-                <p className="text-xs text-blue-400">
+              <div className="p-3 bg-bg-hover border border-border-secondary rounded-lg">
+                <p className="text-xs text-text-secondary">
                   You'll start with 1000 tokens to trade!
                 </p>
               </div>
@@ -115,7 +115,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 disabled:bg-gray-600 transition"
+              className="w-full py-3 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover disabled:bg-btn-secondary disabled:text-text-disabled transition"
             >
               {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
@@ -128,7 +128,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-sm text-blue-400 hover:text-blue-300 font-medium"
+              className="text-sm text-text-muted hover:text-text-primary font-medium"
             >
               {isLogin
                 ? "Don't have an account? Sign up"

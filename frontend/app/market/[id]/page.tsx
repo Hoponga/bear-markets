@@ -38,8 +38,8 @@ export default function MarketDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
-          <p className="mt-4 text-gray-400">Loading market...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted"></div>
+          <p className="mt-4 text-text-muted">Loading market...</p>
         </div>
       </div>
     );
@@ -62,11 +62,11 @@ export default function MarketDetailPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Market Header */}
-      <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-8 mb-8">
-        <h1 className="text-3xl font-bold text-white mb-4">{market.title}</h1>
-        <p className="text-gray-400 mb-6">{market.description}</p>
+      <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 mb-8">
+        <h1 className="text-3xl font-bold text-text-primary mb-4">{market.title}</h1>
+        <p className="text-text-muted mb-6">{market.description}</p>
 
-        {/* Current Prices */}
+        {/* Current Prices - Keep green/red */}
         <div className="grid grid-cols-2 gap-6 max-w-md">
           <div className="bg-green-900/30 rounded-lg p-4 border-2 border-green-700/50">
             <p className="text-sm text-green-400 font-medium mb-1">YES</p>
@@ -79,12 +79,12 @@ export default function MarketDetailPage() {
         </div>
 
         {/* Market Info */}
-        <div className="mt-6 flex space-x-6 text-sm text-gray-500">
+        <div className="mt-6 flex space-x-6 text-sm text-text-disabled">
           <span>Volume: ${market.total_volume.toFixed(0)}</span>
           <span>
             Closes: {new Date(market.resolution_date).toLocaleDateString()}
           </span>
-          <span className={market.status === 'active' ? 'text-green-400' : 'text-gray-500'}>
+          <span className={market.status === 'active' ? 'text-green-400' : 'text-text-disabled'}>
             {market.status === 'active' ? '● Active' : '○ Resolved'}
           </span>
         </div>
@@ -98,7 +98,7 @@ export default function MarketDetailPage() {
       {/* Orderbook - Admin Only */}
       {isAdmin && (
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-white mb-4">Orderbook (Admin View)</h2>
+          <h2 className="text-xl font-bold text-text-primary mb-4">Orderbook (Admin View)</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
               <OrderBook marketId={marketId} side="YES" />

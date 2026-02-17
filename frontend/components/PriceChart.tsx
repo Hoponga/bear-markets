@@ -63,8 +63,8 @@ export default function PriceChart({ marketId }: PriceChartProps) {
   const xAxisInterval = dataLength <= 6 ? 0 : Math.floor((dataLength - 1) / 5);
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Price History</h3>
+    <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6">
+      <h3 className="text-lg font-semibold text-text-primary mb-4">Price History</h3>
 
       {formatData.length > 1 ? (
         <ResponsiveContainer width="100%" height={300}>
@@ -86,7 +86,7 @@ export default function PriceChart({ marketId }: PriceChartProps) {
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <div className="h-[300px] flex items-center justify-center text-gray-500">
+        <div className="h-[300px] flex items-center justify-center text-text-disabled">
           <p>No trades yet. Prices will appear as trades execute.</p>
         </div>
       )}

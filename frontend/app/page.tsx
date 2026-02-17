@@ -64,17 +64,17 @@ export default function HomePage() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold text-text-primary mb-2">
             Active Markets
           </h1>
-          <p className="text-lg text-gray-400">
+          <p className="text-lg text-text-muted">
             Trade on prediction markets at the number one public university in the world
           </p>
         </div>
         {user && (
           <button
             onClick={() => setShowIdeaForm(!showIdeaForm)}
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition flex-shrink-0"
+            className="px-4 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition flex-shrink-0"
           >
             {showIdeaForm ? 'Cancel' : 'Suggest a Market'}
           </button>
@@ -83,35 +83,35 @@ export default function HomePage() {
 
       {/* Market Idea Form */}
       {showIdeaForm && user && (
-        <div className="mb-8 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Suggest a New Market</h2>
-          <p className="text-gray-400 mb-4">
+        <div className="mb-8 bg-bg-card rounded-lg shadow-lg border border-border-primary p-6">
+          <h2 className="text-xl font-bold text-text-primary mb-4">Suggest a New Market</h2>
+          <p className="text-text-muted mb-4">
             Have an idea for a prediction market? Submit it here and our team will review it.
           </p>
 
           <form onSubmit={handleSubmitIdea} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Market Title
               </label>
               <input
                 type="text"
                 value={ideaTitle}
                 onChange={(e) => setIdeaTitle(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 placeholder="e.g., Will the new student center open by Fall 2025?"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Description & Resolution Criteria
               </label>
               <textarea
                 value={ideaDescription}
                 onChange={(e) => setIdeaDescription(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 rows={4}
                 placeholder="Describe your market idea and how it should be resolved..."
                 required
@@ -133,7 +133,7 @@ export default function HomePage() {
             <button
               type="submit"
               disabled={ideaLoading}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 disabled:bg-gray-600 transition"
+              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover disabled:bg-btn-secondary disabled:text-text-disabled transition"
             >
               {ideaLoading ? 'Submitting...' : 'Submit Idea'}
             </button>
@@ -144,8 +144,8 @@ export default function HomePage() {
       {/* Loading State */}
       {loading && (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
-          <p className="mt-4 text-gray-400">Loading markets...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted"></div>
+          <p className="mt-4 text-text-muted">Loading markets...</p>
         </div>
       )}
 
@@ -166,9 +166,9 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
-              <p className="text-gray-400 text-lg">No active markets yet.</p>
-              <p className="text-gray-500 mt-2">Check back soon!</p>
+            <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
+              <p className="text-text-muted text-lg">No active markets yet.</p>
+              <p className="text-text-disabled mt-2">Check back soon!</p>
             </div>
           )}
         </>

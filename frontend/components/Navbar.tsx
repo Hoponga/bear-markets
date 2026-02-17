@@ -48,13 +48,13 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+      <nav className="bg-bg-card border-b border-border-primary sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <span className="text-2xl font-bold text-blue-400">📊</span>
-              <span className="text-xl font-bold text-white">
+              <span className="text-2xl font-bold">📊</span>
+              <span className="text-xl font-bold text-text-primary">
                 Bear Markets
               </span>
             </Link>
@@ -65,40 +65,40 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/"
-                    className="text-gray-300 hover:text-blue-400 font-medium transition"
+                    className="text-text-secondary hover:text-text-primary font-medium transition"
                   >
                     Markets
                   </Link>
                   <Link
                     href="/portfolio"
-                    className="text-gray-300 hover:text-blue-400 font-medium transition"
+                    className="text-text-secondary hover:text-text-primary font-medium transition"
                   >
                     Portfolio
                   </Link>
                   <Link
                     href="/private-markets"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition"
+                    className="text-text-disabled hover:text-text-secondary font-medium transition"
                   >
                     🔒 Private
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="text-gray-300 hover:text-blue-400 font-medium transition"
+                    className="text-text-secondary hover:text-text-primary font-medium transition"
                   >
                     Leaderboard
                   </Link>
 
                   {/* User Info */}
-                  <div className="flex items-center space-x-4 border-l border-gray-600 pl-6">
+                  <div className="flex items-center space-x-4 border-l border-border-secondary pl-6">
                     <div className="text-right">
-                      <p className="text-sm font-medium text-white">{user.name}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-sm font-medium text-text-primary">{user.name}</p>
+                      <p className="text-xs text-text-muted">
                         {user.token_balance.toFixed(2)} tokens
                       </p>
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white border border-gray-600 rounded-lg hover:bg-gray-700 transition"
+                      className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary border border-border-secondary rounded-lg hover:bg-bg-hover transition"
                     >
                       Logout
                     </button>
@@ -108,13 +108,13 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/leaderboard"
-                    className="text-gray-300 hover:text-blue-400 font-medium transition"
+                    className="text-text-secondary hover:text-text-primary font-medium transition"
                   >
                     Leaderboard
                   </Link>
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition"
+                    className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
                   >
                     Sign In
                   </button>

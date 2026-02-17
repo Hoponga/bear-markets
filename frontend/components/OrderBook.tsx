@@ -48,7 +48,7 @@ export default function OrderBook({ marketId, side }: OrderBookProps) {
   }, [marketId]);
 
   if (loading || !orderbook) {
-    return <div className="text-center py-8 text-gray-400">Loading orderbook...</div>;
+    return <div className="text-center py-8 text-text-muted">Loading orderbook...</div>;
   }
 
   const sideData = orderbook[side];
@@ -57,45 +57,45 @@ export default function OrderBook({ marketId, side }: OrderBookProps) {
   const renderLevel = (level: OrderbookLevel, type: 'bid' | 'ask') => (
     <div
       key={`${type}-${level.price}`}
-      className="grid grid-cols-2 py-2 px-3 hover:bg-gray-700/50"
+      className="grid grid-cols-2 py-2 px-3 hover:bg-bg-hover"
     >
       <span className={`font-medium ${type === 'bid' ? 'text-green-400' : 'text-red-400'}`}>
         ${level.price.toFixed(2)}
       </span>
-      <span className="text-gray-300 text-right">{level.quantity}</span>
+      <span className="text-text-secondary text-right">{level.quantity}</span>
     </div>
   );
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+    <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary">
       {/* Header */}
-      <div className="border-b border-gray-700 p-4">
-        <h3 className="text-lg font-semibold text-white">
+      <div className="border-b border-border-primary p-4">
+        <h3 className="text-lg font-semibold text-text-primary">
           {side} Orderbook
         </h3>
-        <p className="text-sm text-gray-400 mt-1">
-          Midpoint: <span className="font-medium text-white">${midpoint.toFixed(2)}</span>
+        <p className="text-sm text-text-muted mt-1">
+          Midpoint: <span className="font-medium text-text-primary">${midpoint.toFixed(2)}</span>
         </p>
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-2 py-2 px-3 bg-gray-700/50 border-b border-gray-700 text-xs font-medium text-gray-400">
+      <div className="grid grid-cols-2 py-2 px-3 bg-bg-hover border-b border-border-primary text-xs font-medium text-text-muted">
         <span>Price</span>
         <span className="text-right">Quantity</span>
       </div>
 
       {/* Asks (Sell Orders) */}
-      <div className="border-b border-gray-700">
+      <div className="border-b border-border-primary">
         {sideData.asks.length > 0 ? (
           sideData.asks.slice(0, 10).map((level) => renderLevel(level, 'ask'))
         ) : (
-          <div className="py-4 text-center text-sm text-gray-500">No sell orders</div>
+          <div className="py-4 text-center text-sm text-text-disabled">No sell orders</div>
         )}
       </div>
 
       {/* Spread */}
-      <div className="bg-gray-700/30 py-2 px-3 text-center">
-        <span className="text-xs text-gray-400">
+      <div className="bg-bg-hover py-2 px-3 text-center">
+        <span className="text-xs text-text-muted">
           Spread:{' '}
           {sideData.asks[0] && sideData.bids[0]
             ? `$${(sideData.asks[0].price - sideData.bids[0].price).toFixed(3)}`
@@ -108,7 +108,7 @@ export default function OrderBook({ marketId, side }: OrderBookProps) {
         {sideData.bids.length > 0 ? (
           sideData.bids.slice(0, 10).map((level) => renderLevel(level, 'bid'))
         ) : (
-          <div className="py-4 text-center text-sm text-gray-500">No buy orders</div>
+          <div className="py-4 text-center text-sm text-text-disabled">No buy orders</div>
         )}
       </div>
     </div>

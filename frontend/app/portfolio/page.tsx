@@ -48,8 +48,8 @@ export default function PortfolioPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
-          <p className="mt-4 text-gray-400">Loading portfolio...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted"></div>
+          <p className="mt-4 text-text-muted">Loading portfolio...</p>
         </div>
       </div>
     );
@@ -69,10 +69,10 @@ export default function PortfolioPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Portfolio</h1>
-        <p className="text-lg text-gray-400">
+        <h1 className="text-4xl font-bold text-text-primary mb-2">Portfolio</h1>
+        <p className="text-lg text-text-muted">
           Token Balance:{' '}
-          <span className="font-bold text-blue-400">
+          <span className="font-bold text-text-primary">
             ${portfolio.token_balance.toFixed(2)}
           </span>
         </p>
@@ -80,48 +80,48 @@ export default function PortfolioPage() {
 
       {/* Positions */}
       <div className="mb-12">
-        <h2 className="text-2xl font-bold text-white mb-4">Your Positions</h2>
+        <h2 className="text-2xl font-bold text-text-primary mb-4">Your Positions</h2>
         <PositionsList positions={portfolio.positions} />
       </div>
 
       {/* Open Orders */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Open Orders</h2>
+        <h2 className="text-2xl font-bold text-text-primary mb-4">Open Orders</h2>
         {portfolio.open_orders.length > 0 ? (
-          <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-700/50">
+          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
+            <table className="min-w-full divide-y divide-border-primary">
+              <thead className="bg-bg-hover">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Market
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Side
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Filled
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-border-primary">
                 {portfolio.open_orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  <tr key={order.id} className="hover:bg-bg-hover">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                       {order.market_id.slice(0, 8)}...
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -139,23 +139,23 @@ export default function PortfolioPage() {
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${
                           order.order_type === 'BUY'
-                            ? 'bg-blue-900/50 text-blue-400 border border-blue-700'
+                            ? 'bg-bg-hover text-text-secondary border border-border-secondary'
                             : 'bg-orange-900/50 text-orange-400 border border-orange-700'
                         }`}
                       >
                         {order.order_type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                       ${order.price.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                       {order.quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">
                       {order.filled_quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">
                       {order.status}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -172,8 +172,8 @@ export default function PortfolioPage() {
             </table>
           </div>
         ) : (
-          <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-8 text-center">
-            <p className="text-gray-400">You don't have any open orders.</p>
+          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+            <p className="text-text-muted">You don't have any open orders.</p>
           </div>
         )}
       </div>
