@@ -1,17 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authStorage } from '@/lib/auth';
-import { authAPI } from '@/lib/api';
+import { authAPI, organizationsAPI } from '@/lib/api';
 import AuthModal from './AuthModal';
-import type { User } from '@/types';
+import type { User, Organization } from '@/types';
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    if (showUserDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserDropdown]);
 
   useEffect(() => {
     setIsClient(true);
@@ -31,6 +50,22 @@ export default function Navbar() {
         });
     }
   }, []);
+
+  const loadUserData = async () => {
+    try {
+      const orgsData = await organizationsAPI.list();
+      setOrganizations(orgsData);
+    } catch (err) {
+      console.error('Failed to load user data', err);
+    }
+  };
+
+  const toggleUserDropdown = () => {
+    if (!showUserDropdown) {
+      loadUserData();
+    }
+    setShowUserDropdown(!showUserDropdown);
+  };
 
   const handleLogout = () => {
     authStorage.logout();
@@ -72,12 +107,6 @@ export default function Navbar() {
                     Markets
                   </Link>
                   <Link
-                    href="/portfolio"
-                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
-                  >
-                    Portfolio
-                  </Link>
-                  <Link
                     href="/organizations"
                     className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
                   >
@@ -89,18 +118,57 @@ export default function Navbar() {
                   >
                     Leaderboard
                   </Link>
-                  <span className="text-xs text-text-muted">
-                    {user.name} · {user.token_balance.toFixed(2)} tokens
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="text-text-muted hover:text-text-secondary transition"
-                    title="Logout"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={toggleUserDropdown}
+                      className="text-xs text-text-muted hover:text-text-secondary transition"
+                    >
+                      {user.name} · {user.token_balance.toFixed(2)} tokens
+                    </button>
+                    {showUserDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-bg-card border border-border-primary rounded-lg shadow-lg z-50">
+                        <div className="p-3 border-b border-border-primary">
+                          <p className="text-sm font-medium text-text-primary">{user.name}</p>
+                          <p className="text-xs text-text-muted">{user.email}</p>
+                        </div>
+
+                        <div className="p-2 border-b border-border-primary">
+                          <Link
+                            href="/portfolio"
+                            className="block px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary transition"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            Portfolio
+                          </Link>
+                        </div>
+
+                        {organizations.length > 0 && (
+                          <div className="p-2 border-b border-border-primary">
+                            <p className="px-2 py-1 text-xs text-text-muted uppercase tracking-wide">Organizations</p>
+                            {organizations.map((org) => (
+                              <Link
+                                key={org.id}
+                                href={`/organizations/${org.id}`}
+                                className="block px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary transition"
+                                onClick={() => setShowUserDropdown(false)}
+                              >
+                                {org.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="p-2 border-t border-border-primary">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-2 py-1.5 text-xs text-text-muted hover:text-text-secondary transition"
+                          >
+                            Logout
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>

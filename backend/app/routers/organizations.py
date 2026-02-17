@@ -69,13 +69,20 @@ async def list_my_organizations(current_user: dict = Depends(get_current_user)):
 
     # Find all memberships for this user
     memberships_cursor = db.organization_members.find({"user_id": current_user["_id"]})
-    org_ids = [m["organization_id"] async for m in memberships_cursor]
+    memberships = {m["organization_id"]: m async for m in memberships_cursor}
+    org_ids = list(memberships.keys())
+
+    if not org_ids:
+        return []
 
     # Get organization details
     orgs_cursor = db.organizations.find({"_id": {"$in": org_ids}})
     organizations = []
 
     async for org in orgs_cursor:
+        membership = memberships.get(org["_id"])
+        user_token_balance = membership["token_balance"] if membership else org["initial_token_balance"]
+
         organizations.append(OrganizationResponse(
             id=str(org["_id"]),
             name=org["name"],
@@ -84,7 +91,8 @@ async def list_my_organizations(current_user: dict = Depends(get_current_user)):
             created_at=org["created_at"],
             member_count=org["member_count"],
             invite_code=org["invite_code"],
-            initial_token_balance=org["initial_token_balance"]
+            initial_token_balance=org["initial_token_balance"],
+            user_token_balance=user_token_balance
         ))
 
     return organizations
