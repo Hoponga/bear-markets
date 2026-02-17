@@ -13,22 +13,22 @@ module.exports = {
       colors: {
         // Background colors
         bg: {
-          primary: '#0a0a0a',    // Main page background (gray-900)
-          card: '#111111',       // Card backgrounds (gray-800)
-          hover: '#1e1e1e',      // Hover states (gray-700)
-          input: '#1e1e1e',      // Input backgrounds (gray-700)
+          primary: '#111827',    // Main page background (matches navbar)
+          card: '#1f2937',       // Card backgrounds (gray-800)
+          hover: '#374151',      // Hover states (gray-700)
+          input: '#1f2937',      // Input backgrounds (gray-800)
         },
         // Border colors
         border: {
-          primary: '#1e1e1e',    // Main borders (gray-700)
-          secondary: '#2e2e2e',  // Secondary borders (gray-600)
+          primary: '#374151',    // Main borders (gray-700)
+          secondary: '#4b5563',  // Secondary borders (gray-600)
         },
         // Text colors
         text: {
-          primary: '#ffffff',    // Primary text (white)
-          secondary: '#d1d5db',  // Secondary text (gray-300)
-          muted: '#9ca3af',      // Muted text (gray-400)
-          disabled: '#6b7280',   // Disabled text (gray-500)
+          primary: '#d1d5db',    // Primary text (muted gray-300)
+          secondary: '#9ca3af',  // Secondary text (gray-400)
+          muted: '#6b7280',      // Muted text (gray-500)
+          disabled: '#4b5563',   // Disabled text (gray-600)
         },
         // Button colors
         btn: {
