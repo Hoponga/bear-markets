@@ -29,6 +29,7 @@ export interface Organization {
   member_count: number;
   invite_code: string;
   initial_token_balance: number;
+  user_token_balance: number;
 }
 
 export interface OrganizationMember {

@@ -87,7 +87,7 @@ export default function OrganizationsPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted"></div>
         </div>
       </div>
     );
@@ -97,8 +97,8 @@ export default function OrganizationsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Organizations</h1>
-        <p className="text-lg text-gray-600">
+        <h1 className="text-4xl font-bold text-text-primary mb-2">Organizations</h1>
+        <p className="text-lg text-text-muted">
           Create or join organizations to trade with your team
         </p>
       </div>
@@ -107,13 +107,13 @@ export default function OrganizationsPage() {
       <div className="flex space-x-4 mb-8">
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+          className="px-6 py-3 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
         >
           + Create Organization
         </button>
         <button
           onClick={() => setShowJoinForm(!showJoinForm)}
-          className="px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+          className="px-6 py-3 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
         >
           Join with Invite
         </button>
@@ -121,31 +121,31 @@ export default function OrganizationsPage() {
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Create Organization</h2>
+        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Create Organization</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Organization Name
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 placeholder="e.g., Berkeley Startups"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Description
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 rows={3}
                 placeholder="What is this organization for?"
                 required
@@ -153,36 +153,36 @@ export default function OrganizationsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Initial Token Balance (per member)
               </label>
               <input
                 type="number"
                 value={initialTokens}
                 onChange={(e) => setInitialTokens(parseInt(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
                 min="100"
                 max="100000"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+                className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
               >
                 Create
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300"
+                className="px-6 py-2 bg-btn-secondary text-text-secondary font-medium rounded-lg hover:bg-btn-secondary-hover"
               >
                 Cancel
               </button>
@@ -193,40 +193,40 @@ export default function OrganizationsPage() {
 
       {/* Join Form */}
       {showJoinForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Join Organization</h2>
+        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Join Organization</h2>
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Invite Link or Code
               </label>
               <input
                 type="text"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 placeholder="Paste invite link or code"
                 required
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700"
+                className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
               >
                 Join
               </button>
               <button
                 type="button"
                 onClick={() => setShowJoinForm(false)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300"
+                className="px-6 py-2 bg-btn-secondary text-text-secondary font-medium rounded-lg hover:bg-btn-secondary-hover"
               >
                 Cancel
               </button>
@@ -237,7 +237,7 @@ export default function OrganizationsPage() {
 
       {/* Organizations List */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-bold text-text-primary mb-4">
           My Organizations ({organizations.length})
         </h2>
 
@@ -247,13 +247,13 @@ export default function OrganizationsPage() {
               <Link
                 key={org.id}
                 href={`/organizations/${org.id}`}
-                className="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
+                className="block bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 hover:shadow-xl hover:border-border-secondary transition"
               >
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{org.name}</h3>
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                <h3 className="text-xl font-bold text-text-primary mb-2">{org.name}</h3>
+                <p className="text-sm text-text-muted mb-4 line-clamp-2">
                   {org.description}
                 </p>
-                <div className="flex justify-between items-center text-sm text-gray-500">
+                <div className="flex justify-between items-center text-sm text-text-disabled">
                   <span>{org.member_count} members</span>
                   <span>{org.initial_token_balance} tokens</span>
                 </div>
@@ -261,13 +261,13 @@ export default function OrganizationsPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <p className="text-gray-500 mb-4">
+          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+            <p className="text-text-muted mb-4">
               You haven't created or joined any organizations yet.
             </p>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
             >
               Create Your First Organization
             </button>

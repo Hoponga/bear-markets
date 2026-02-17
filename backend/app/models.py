@@ -157,6 +157,7 @@ class LeaderboardEntry(BaseModel):
     rank: int
     user_id: str
     name: str
+    email: str
     token_balance: float
     position_value: float
     total_value: float
@@ -230,6 +231,7 @@ class OrganizationResponse(BaseModel):
     member_count: int
     invite_code: str
     initial_token_balance: int
+    user_token_balance: float  # Current user's token balance in this org
 
 class OrganizationMemberResponse(BaseModel):
     user_id: str
@@ -241,15 +243,6 @@ class OrganizationMemberResponse(BaseModel):
 
 class InviteUserRequest(BaseModel):
     email: EmailStr
-
-class LeaderboardEntry(BaseModel):
-    rank: int
-    user_id: str
-    name: str
-    email: str
-    token_balance: float
-    position_value: float  # Value of current positions
-    total_value: float  # token_balance + position_value
 
 class OrganizationLeaderboardResponse(BaseModel):
     entries: list[LeaderboardEntry]
