@@ -64,7 +64,7 @@ export default function HomePage() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-text-primary mb-2">
+          <h1 className="text-4xl font-semibold text-text-primary mb-2">
             Active Markets
           </h1>
           <p className="text-lg text-text-muted">
@@ -74,7 +74,7 @@ export default function HomePage() {
         {user && (
           <button
             onClick={() => setShowIdeaForm(!showIdeaForm)}
-            className="px-4 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition flex-shrink-0"
+            className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer flex-shrink-0"
           >
             {showIdeaForm ? 'Cancel' : 'Suggest a Market'}
           </button>
@@ -84,7 +84,7 @@ export default function HomePage() {
       {/* Market Idea Form */}
       {showIdeaForm && user && (
         <div className="mb-8 bg-bg-card rounded-lg shadow-lg border border-border-primary p-6">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Suggest a New Market</h2>
+          <h2 className="text-xl font-medium text-text-primary mb-4">Suggest a New Market</h2>
           <p className="text-text-muted mb-4">
             Have an idea for a prediction market? Submit it here and our team will review it.
           </p>
@@ -133,7 +133,7 @@ export default function HomePage() {
             <button
               type="submit"
               disabled={ideaLoading}
-              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover disabled:bg-btn-secondary disabled:text-text-disabled transition"
+              className="text-text-primary font-medium hover:text-blue-500 disabled:text-text-disabled transition cursor-pointer"
             >
               {ideaLoading ? 'Submitting...' : 'Submit Idea'}
             </button>

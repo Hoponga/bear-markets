@@ -53,8 +53,8 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <span className="text-2xl font-bold">📊</span>
-              <span className="text-xl font-bold text-text-primary">
+              <span className="text-2xl font-semibold">📊</span>
+              <span className="text-xl font-semibold text-text-primary">
                 Bear Markets
               </span>
             </Link>
@@ -114,7 +114,7 @@ export default function Navbar() {
                   </Link>
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
+                    className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
                   >
                     Sign In
                   </button>

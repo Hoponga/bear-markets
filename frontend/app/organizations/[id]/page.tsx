@@ -111,12 +111,12 @@ export default function OrganizationDetailPage() {
       <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 mb-8">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-4xl font-bold text-text-primary mb-2">{organization.name}</h1>
+            <h1 className="text-4xl font-semibold text-text-primary mb-2">{organization.name}</h1>
             <p className="text-lg text-text-muted">{organization.description}</p>
           </div>
           <button
             onClick={copyInviteLink}
-            className="px-4 py-2 bg-btn-secondary text-text-primary rounded-lg hover:bg-btn-secondary-hover transition"
+            className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
           >
             📋 Copy Invite Link
           </button>
@@ -160,10 +160,10 @@ export default function OrganizationDetailPage() {
       {activeTab === 'markets' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-text-primary">Markets</h2>
+            <h2 className="text-2xl font-medium text-text-primary">Markets</h2>
             <button
               onClick={() => setShowCreateMarket(!showCreateMarket)}
-              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
+              className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
             >
               + Create Market
             </button>
@@ -172,7 +172,7 @@ export default function OrganizationDetailPage() {
           {/* Create Market Form */}
           {showCreateMarket && (
             <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-6">
-              <h3 className="text-xl font-bold text-text-primary mb-4">Create Market</h3>
+              <h3 className="text-xl font-medium text-text-primary mb-4">Create Market</h3>
               <form onSubmit={handleCreateMarket} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -218,14 +218,14 @@ export default function OrganizationDetailPage() {
                 <div className="flex space-x-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
+                    className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
                   >
                     Create
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateMarket(false)}
-                    className="px-6 py-2 bg-btn-secondary text-text-secondary font-medium rounded-lg hover:bg-btn-secondary-hover"
+                    className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -246,7 +246,7 @@ export default function OrganizationDetailPage() {
               <p className="text-text-muted mb-4">No markets yet in this organization.</p>
               <button
                 onClick={() => setShowCreateMarket(true)}
-                className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
+                className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
               >
                 Create First Market
               </button>
@@ -258,7 +258,7 @@ export default function OrganizationDetailPage() {
       {/* Leaderboard Tab */}
       {activeTab === 'leaderboard' && (
         <div>
-          <h2 className="text-2xl font-bold text-text-primary mb-6">Leaderboard</h2>
+          <h2 className="text-2xl font-medium text-text-primary mb-6">Leaderboard</h2>
 
           {leaderboardLoading ? (
             <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">

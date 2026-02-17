@@ -97,23 +97,23 @@ export default function OrganizationsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-text-primary mb-2">Organizations</h1>
+        <h1 className="text-4xl font-semibold text-text-primary mb-2">Organizations</h1>
         <p className="text-lg text-text-muted">
           Create or join organizations to trade with your team
         </p>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex space-x-4 mb-8">
+      {/* Action Links */}
+      <div className="flex space-x-8 mb-8">
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="px-6 py-3 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
+          className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
         >
           + Create Organization
         </button>
         <button
           onClick={() => setShowJoinForm(!showJoinForm)}
-          className="px-6 py-3 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
+          className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
         >
           Join with Invite
         </button>
@@ -122,7 +122,7 @@ export default function OrganizationsPage() {
       {/* Create Form */}
       {showCreateForm && (
         <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
-          <h2 className="text-2xl font-bold text-text-primary mb-4">Create Organization</h2>
+          <h2 className="text-2xl font-medium text-text-primary mb-4">Create Organization</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -175,14 +175,14 @@ export default function OrganizationsPage() {
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
+                className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
               >
                 Create
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="px-6 py-2 bg-btn-secondary text-text-secondary font-medium rounded-lg hover:bg-btn-secondary-hover"
+                className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -194,7 +194,7 @@ export default function OrganizationsPage() {
       {/* Join Form */}
       {showJoinForm && (
         <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
-          <h2 className="text-2xl font-bold text-text-primary mb-4">Join Organization</h2>
+          <h2 className="text-2xl font-medium text-text-primary mb-4">Join Organization</h2>
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -219,14 +219,14 @@ export default function OrganizationsPage() {
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
+                className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
               >
                 Join
               </button>
               <button
                 type="button"
                 onClick={() => setShowJoinForm(false)}
-                className="px-6 py-2 bg-btn-secondary text-text-secondary font-medium rounded-lg hover:bg-btn-secondary-hover"
+                className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -237,7 +237,7 @@ export default function OrganizationsPage() {
 
       {/* Organizations List */}
       <div>
-        <h2 className="text-2xl font-bold text-text-primary mb-4">
+        <h2 className="text-2xl font-medium text-text-primary mb-4">
           My Organizations ({organizations.length})
         </h2>
 
@@ -249,7 +249,7 @@ export default function OrganizationsPage() {
                 href={`/organizations/${org.id}`}
                 className="block bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 hover:shadow-xl hover:border-border-secondary transition"
               >
-                <h3 className="text-xl font-bold text-text-primary mb-2">{org.name}</h3>
+                <h3 className="text-xl font-medium text-text-primary mb-2">{org.name}</h3>
                 <p className="text-sm text-text-muted mb-4 line-clamp-2">
                   {org.description}
                 </p>
@@ -267,7 +267,7 @@ export default function OrganizationsPage() {
             </p>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
+              className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
             >
               Create Your First Organization
             </button>

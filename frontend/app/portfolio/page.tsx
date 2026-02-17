@@ -69,7 +69,7 @@ export default function PortfolioPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-text-primary mb-2">Portfolio</h1>
+        <h1 className="text-4xl font-semibold text-text-primary mb-2">Portfolio</h1>
         <p className="text-lg text-text-muted">
           Token Balance:{' '}
           <span className="font-bold text-text-primary">
@@ -80,13 +80,13 @@ export default function PortfolioPage() {
 
       {/* Positions */}
       <div className="mb-12">
-        <h2 className="text-2xl font-bold text-text-primary mb-4">Your Positions</h2>
+        <h2 className="text-2xl font-medium text-text-primary mb-4">Your Positions</h2>
         <PositionsList positions={portfolio.positions} />
       </div>
 
       {/* Open Orders */}
       <div>
-        <h2 className="text-2xl font-bold text-text-primary mb-4">Open Orders</h2>
+        <h2 className="text-2xl font-medium text-text-primary mb-4">Open Orders</h2>
         {portfolio.open_orders.length > 0 ? (
           <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
             <table className="min-w-full divide-y divide-border-primary">

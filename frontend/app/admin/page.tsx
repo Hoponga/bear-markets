@@ -174,7 +174,7 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl font-bold text-text-primary mb-8">Admin Panel</h1>
+      <h1 className="text-4xl font-semibold text-text-primary mb-8">Admin Panel</h1>
 
       {/* Tab Navigation */}
       <div className="border-b border-border-primary mb-8">
@@ -217,7 +217,7 @@ export default function AdminPage() {
         <>
           {/* Create Market Form */}
           <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-12">
-            <h2 className="text-2xl font-bold text-text-primary mb-4">Create New Market</h2>
+            <h2 className="text-2xl font-medium text-text-primary mb-4">Create New Market</h2>
 
             <form onSubmit={handleCreateMarket} className="space-y-4">
               <div>
@@ -285,7 +285,7 @@ export default function AdminPage() {
 
           {/* Active Markets */}
           <div>
-            <h2 className="text-2xl font-bold text-text-primary mb-4">Active Markets</h2>
+            <h2 className="text-2xl font-medium text-text-primary mb-4">Active Markets</h2>
 
             {markets.length > 0 ? (
               <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
@@ -369,7 +369,7 @@ export default function AdminPage() {
         <>
           {/* Make Admin Form */}
           <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
-            <h2 className="text-2xl font-bold text-text-primary mb-4">Add New Admin</h2>
+            <h2 className="text-2xl font-medium text-text-primary mb-4">Add New Admin</h2>
 
             <form onSubmit={handleMakeAdmin} className="space-y-4">
               <div>
@@ -410,7 +410,7 @@ export default function AdminPage() {
 
           {/* Users List */}
           <div>
-            <h2 className="text-2xl font-bold text-text-primary mb-4">All Users</h2>
+            <h2 className="text-2xl font-medium text-text-primary mb-4">All Users</h2>
 
             <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
               <table className="min-w-full divide-y divide-border-primary">
@@ -512,7 +512,7 @@ export default function AdminPage() {
       {activeTab === 'ideas' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-text-primary">Market Ideas</h2>
+            <h2 className="text-2xl font-medium text-text-primary">Market Ideas</h2>
             <select
               value={ideasFilter}
               onChange={(e) => {
