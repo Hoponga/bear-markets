@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -28,6 +29,7 @@ export default function RootLayout({
           <div className="flex-1">{children}</div>
           <Footer />
         </main>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

@@ -32,13 +32,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Public endpoints that never require auth - don't logout/redirect on 401 for these
+// (avoids redirect loop if a public endpoint wrongly returns 401)
+const PUBLIC_401_SKIP = [
+  '/api/markets',           // list, get, orderbook - all public
+  '/api/auth/leaderboard',
+  '/api/auth/register',
+  '/api/auth/login',
+  '/api/auth/google',
+];
+
+function isPublicEndpoint(url: string): boolean {
+  try {
+    const path = new URL(url, API_URL).pathname;
+    return PUBLIC_401_SKIP.some((p) => path === p || path.startsWith(p + '/'));
+  } catch {
+    return false;
+  }
+}
+
+// Handle auth errors - logout on 401 for protected endpoints only; never redirect
+// (redirect caused infinite loop when /api/markets returned 401)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isPublicEndpoint(error.config?.url || '')) {
       authStorage.logout();
-      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -63,6 +82,11 @@ export const authAPI = {
 
   getPortfolio: async (): Promise<Portfolio> => {
     const { data } = await api.get('/api/auth/portfolio');
+    return data;
+  },
+
+  googleAuth: async (credential: string): Promise<AuthResponse> => {
+    const { data } = await api.post('/api/auth/google', { credential });
     return data;
   },
 };

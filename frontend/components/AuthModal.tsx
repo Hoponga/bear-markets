@@ -1,9 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { authAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
 import type { User } from '@/types';
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
+        };
+      };
+    };
+  }
+}
 
 interface AuthModalProps {
   onClose: () => void;
@@ -15,12 +29,58 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Load Google Identity Services script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const initializeGoogle = () => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleCallback,
+      });
+
+      const buttonDiv = document.getElementById('google-signin-button');
+      if (buttonDiv) {
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'filled_black',
+          size: 'large',
+          width: '100%',
+          text: 'continue_with',
+        });
+      }
+    }
+  };
+
+  const handleGoogleCallback = async (response: any) => {
+    setLoading(true);
+
+    try {
+      const authResponse = await authAPI.googleAuth(response.credential);
+      authStorage.setToken(authResponse.access_token);
+      authStorage.setUser(authResponse.user);
+      onSuccess(authResponse.user);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -32,7 +92,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
       authStorage.setUser(response.user);
       onSuccess(response.user);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'An error occurred');
+      toast.error(err.response?.data?.detail || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -53,6 +113,20 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
             >
               ×
             </button>
+          </div>
+
+          {/* Google Sign-In */}
+          <div className="mb-4">
+            <div id="google-signin-button" className="w-full flex justify-center"></div>
+          </div>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border-secondary"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-bg-card text-text-muted">or</span>
+            </div>
           </div>
 
           {/* Form */}
@@ -98,12 +172,6 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
               />
             </div>
 
-            {error && (
-              <div className="p-3 bg-red-900/50 border border-red-700 rounded-lg">
-                <p className="text-sm text-red-400">{error}</p>
-              </div>
-            )}
-
             {!isLogin && (
               <div className="p-3 bg-bg-hover border border-border-secondary rounded-lg">
                 <p className="text-xs text-text-secondary">
@@ -124,10 +192,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
           {/* Toggle */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
+              onClick={() => setIsLogin(!isLogin)}
               className="text-sm text-text-muted hover:text-text-primary font-medium"
             >
               {isLogin

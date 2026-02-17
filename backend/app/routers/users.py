@@ -1,7 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from datetime import timedelta
 from bson import ObjectId
+import os
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
+from pydantic import BaseModel
 from app.models import (
     UserCreate, UserLogin, UserResponse, PortfolioResponse, PositionResponse,
     OrderResponse, LeaderboardEntry, LeaderboardResponse, UserListEntry,
@@ -93,6 +97,89 @@ async def login(user_data: UserLogin):
             is_admin=user.get("is_admin", False)
         )
     }
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
+@router.post("/google")
+async def google_auth(request: GoogleAuthRequest):
+    """Authenticate with Google OAuth"""
+    db = await get_database()
+
+    try:
+        # Verify the Google ID token
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        if not google_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth not configured"
+            )
+
+        idinfo = id_token.verify_oauth2_token(
+            request.credential,
+            google_requests.Request(),
+            google_client_id
+        )
+
+        email = idinfo.get("email")
+        name = idinfo.get("name", email.split("@")[0])
+
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not get email from Google"
+            )
+
+        # Check if user exists
+        user = await db.users.find_one({"email": email})
+
+        if user:
+            # User exists - log them in
+            user_id = user["_id"]
+            token_balance = user["token_balance"]
+            is_admin = user.get("is_admin", False)
+        else:
+            # Create new user
+            user_dict = {
+                "email": email,
+                "password_hash": None,  # No password for Google users
+                "name": name,
+                "token_balance": 1000.0,
+                "is_admin": False,
+                "created_at": datetime.utcnow(),
+                "google_id": idinfo.get("sub")
+            }
+            result = await db.users.insert_one(user_dict)
+            user_id = result.inserted_id
+            token_balance = 1000.0
+            is_admin = False
+
+        # Create access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(user_id)},
+            expires_delta=access_token_expires
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse(
+                id=str(user_id),
+                email=email,
+                name=name,
+                token_balance=token_balance,
+                is_admin=is_admin
+            )
+        }
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token"
+        )
 
 
 @router.get("/me", response_model=UserResponse)

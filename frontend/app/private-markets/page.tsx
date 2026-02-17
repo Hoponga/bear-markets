@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { marketsAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
 import MarketCard from '@/components/MarketCard';
@@ -79,7 +80,7 @@ export default function PrivateMarketsPage() {
   const copyInviteLink = (market: Market) => {
     const link = `${window.location.origin}/private-markets?invite=${market.invite_code}`;
     navigator.clipboard.writeText(link);
-    alert('Invite link copied to clipboard!');
+    toast.success('Invite link copied to clipboard!');
   };
 
   if (loading) {

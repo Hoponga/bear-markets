@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { organizationsAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
 import type { Organization, PoolBet, LeaderboardEntry, OrganizationMember } from '@/types';
@@ -170,7 +171,7 @@ export default function OrganizationDetailPage() {
     if (!organization) return;
     const link = `${window.location.origin}/organizations/join?org=${orgId}&code=${organization.invite_code}`;
     navigator.clipboard.writeText(link);
-    alert('Invite link copied!');
+    toast.success('Invite link copied!');
   };
 
   if (loading || !organization) {
