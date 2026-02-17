@@ -84,13 +84,14 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-[rgb(17,24,39)] sticky top-0 z-40">
+      <nav className="bg-[rgb(8,12,20)] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
           <div className="flex justify-between items-center h-12">
             {/* Left - Logo */}
             <Link href="/" className="flex items-center space-x-2">
               <Image src="/logo.png" alt="Bearmarket" width={48} height={48} />
-              <span className="text-sm font-medium text-text-muted uppercase tracking-widest">
+              <span className="text-sm font-medium text-white uppercase tracking-widest">
                 Bearmarket
               </span>
             </Link>
@@ -101,26 +102,26 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/"
-                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
+                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
                   >
                     Markets
                   </Link>
                   <Link
                     href="/organizations"
-                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
+                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
                   >
                     Organizations
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
+                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
                   >
                     Leaderboard
                   </Link>
-                  <div className="relative" ref={dropdownRef}>
+                  <div className="border-l border-white/20 pl-5 relative" ref={dropdownRef}>
                     <button
                       onClick={toggleUserDropdown}
-                      className="text-xs text-text-muted hover:text-text-secondary transition"
+                      className="text-xs text-white/80 hover:text-white transition"
                     >
                       {user.name} · {user.token_balance.toFixed(2)} tokens
                     </button>
@@ -173,16 +174,18 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/leaderboard"
-                    className="text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide transition"
+                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
                   >
                     Leaderboard
                   </Link>
-                  <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="px-4 py-1.5 text-xs text-text-muted hover:text-text-secondary uppercase tracking-wide border border-border-secondary/50 rounded transition"
-                  >
-                    Sign In
-                  </button>
+                  <div className="border-l border-white/20 pl-5">
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="px-4 py-1.5 text-xs text-white/80 hover:text-white uppercase tracking-wide border border-white/30 rounded transition"
+                    >
+                      Sign In
+                    </button>
+                  </div>
                 </>
               )}
             </div>

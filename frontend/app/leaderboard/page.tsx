@@ -69,7 +69,7 @@ export default function LeaderboardPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-text-primary mb-2">Leaderboard</h1>
+        <h1 className="text-4xl font-semibold text-text-primary mb-2">Leaderboard</h1>
         <p className="text-lg text-text-muted">
           Top traders ranked by total portfolio value ({total} users total)
         </p>
