@@ -77,9 +77,9 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/organizations"
-                    className="text-text-disabled hover:text-text-secondary font-medium transition"
+                    className="text-text-secondary hover:text-text-primary font-medium transition"
                   >
-                    🏢 Organizations
+                    Organizations
                   </Link>
                   <Link
                     href="/leaderboard"
