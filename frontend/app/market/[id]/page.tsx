@@ -59,59 +59,73 @@ export default function MarketDetailPage() {
   const noPrice = (market.current_no_price * 100).toFixed(1);
   const isAdmin = user?.is_admin ?? false;
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+      : day === 2 || day === 22 ? 'nd'
+      : day === 3 || day === 23 ? 'rd' : 'th';
+    return `${month} ${day}${suffix}, ${year}`;
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Market Header */}
-      <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 mb-8">
-        <h1 className="text-3xl font-bold text-text-primary mb-4">{market.title}</h1>
-        <p className="text-text-muted mb-6">{market.description}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left column - Market Overview & Price History */}
+        <div className="lg:col-span-2">
+          {/* Market Overview */}
+          <h1 className="text-3xl font-bold text-text-primary mb-4">{market.title}</h1>
+          <p className="text-text-muted mb-6">{market.description}</p>
 
-        {/* Current Prices - Keep green/red */}
-        <div className="grid grid-cols-2 gap-6 max-w-md">
-          <div className="bg-green-900/30 rounded-lg p-4 border-2 border-green-700/50">
-            <p className="text-sm text-green-400 font-medium mb-1">YES</p>
-            <p className="text-4xl font-bold text-green-400">{yesPrice}¢</p>
-          </div>
-          <div className="bg-red-900/30 rounded-lg p-4 border-2 border-red-700/50">
-            <p className="text-sm text-red-400 font-medium mb-1">NO</p>
-            <p className="text-4xl font-bold text-red-400">{noPrice}¢</p>
-          </div>
-        </div>
-
-        {/* Market Info */}
-        <div className="mt-6 flex space-x-6 text-sm text-text-disabled">
-          <span>Volume: ${market.total_volume.toFixed(0)}</span>
-          <span>
-            Closes: {new Date(market.resolution_date).toLocaleDateString()}
-          </span>
-          <span className={market.status === 'active' ? 'text-green-400' : 'text-text-disabled'}>
-            {market.status === 'active' ? '● Active' : '○ Resolved'}
-          </span>
-        </div>
-      </div>
-
-      {/* Trading Interface - Centered */}
-      <div className="max-w-md mx-auto mb-8">
-        <TradeInterface marketId={marketId} onOrderPlaced={loadMarket} />
-      </div>
-
-      {/* Orderbook - Admin Only */}
-      {isAdmin && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Orderbook (Admin View)</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <OrderBook marketId={marketId} side="YES" />
+          {/* Current Prices - Keep green/red */}
+          <div className="grid grid-cols-2 gap-6 max-w-md mb-6">
+            <div className="bg-green-900/30 rounded-lg p-4 border-2 border-green-700/50">
+              <p className="text-sm text-green-400 font-medium mb-1">YES</p>
+              <p className="text-4xl font-bold text-green-400">{yesPrice}¢</p>
             </div>
-            <div>
-              <OrderBook marketId={marketId} side="NO" />
+            <div className="bg-red-900/30 rounded-lg p-4 border-2 border-red-700/50">
+              <p className="text-sm text-red-400 font-medium mb-1">NO</p>
+              <p className="text-4xl font-bold text-red-400">{noPrice}¢</p>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Price Chart */}
-      <PriceChart marketId={marketId} />
+          {/* Market Info */}
+          <div className="flex space-x-6 text-sm text-text-disabled mb-8">
+            <span>Volume: ${market.total_volume.toFixed(0)}</span>
+            <span>Closes: {formatDate(market.resolution_date)}</span>
+            <span className={market.status === 'active' ? 'text-green-400' : 'text-text-disabled'}>
+              {market.status === 'active' ? '● Active' : '○ Resolved'}
+            </span>
+          </div>
+
+          {/* Price History */}
+          <div className="mb-8">
+            <PriceChart marketId={marketId} />
+          </div>
+
+          {/* Orderbook - Admin Only */}
+          {isAdmin && (
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-text-primary mb-4">Orderbook (Admin View)</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                  <OrderBook marketId={marketId} side="YES" />
+                </div>
+                <div>
+                  <OrderBook marketId={marketId} side="NO" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right column - Place Order (card) */}
+        <div className="lg:col-span-1">
+          <TradeInterface marketId={marketId} onOrderPlaced={loadMarket} />
+        </div>
+      </div>
     </div>
   );
 }
