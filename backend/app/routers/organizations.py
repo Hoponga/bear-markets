@@ -57,7 +57,8 @@ async def create_organization(
         created_at=org_dict["created_at"],
         member_count=1,
         invite_code=invite_code,
-        initial_token_balance=org_data.initial_token_balance
+        initial_token_balance=org_data.initial_token_balance,
+        user_token_balance=org_data.initial_token_balance
     )
 
 
@@ -120,7 +121,8 @@ async def get_organization(
         created_at=org["created_at"],
         member_count=org["member_count"],
         invite_code=org["invite_code"],
-        initial_token_balance=org["initial_token_balance"]
+        initial_token_balance=org["initial_token_balance"],
+        user_token_balance=member["token_balance"]
     )
 
 
@@ -179,7 +181,8 @@ async def join_organization(
         created_at=org["created_at"],
         member_count=org["member_count"],
         invite_code=org["invite_code"],
-        initial_token_balance=org["initial_token_balance"]
+        initial_token_balance=org["initial_token_balance"],
+        user_token_balance=org["initial_token_balance"]
     )
 
 

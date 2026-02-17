@@ -17,6 +17,7 @@ export default function OrganizationDetailPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'markets' | 'leaderboard'>('markets');
   const [showCreateMarket, setShowCreateMarket] = useState(false);
 
@@ -59,10 +60,15 @@ export default function OrganizationDetailPage() {
 
   const loadLeaderboard = async () => {
     try {
+      setLeaderboardLoading(true);
       const data = await organizationsAPI.getLeaderboard(orgId);
-      setLeaderboard(data.entries);
+      console.log('Leaderboard data:', data); // Debug log
+      setLeaderboard(data.entries || []);
     } catch (err) {
       console.error('Failed to load leaderboard', err);
+      setLeaderboard([]);
+    } finally {
+      setLeaderboardLoading(false);
     }
   };
 
@@ -93,7 +99,7 @@ export default function OrganizationDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted"></div>
         </div>
       </div>
     );
@@ -102,36 +108,37 @@ export default function OrganizationDetailPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
+      <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 mb-8">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{organization.name}</h1>
-            <p className="text-lg text-gray-600">{organization.description}</p>
+            <h1 className="text-4xl font-bold text-text-primary mb-2">{organization.name}</h1>
+            <p className="text-lg text-text-muted">{organization.description}</p>
           </div>
           <button
             onClick={copyInviteLink}
-            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+            className="px-4 py-2 bg-btn-secondary text-text-primary rounded-lg hover:bg-btn-secondary-hover transition"
           >
             📋 Copy Invite Link
           </button>
         </div>
 
-        <div className="flex space-x-6 text-sm text-gray-500">
-          <span>{organization.member_count} members</span>
-          <span>{organization.initial_token_balance} initial tokens</span>
-          <span>Created {new Date(organization.created_at).toLocaleDateString()}</span>
+        <div className="flex space-x-6 text-sm">
+          <span className="text-text-disabled">{organization.member_count} members</span>
+          <span className="text-text-disabled">{organization.initial_token_balance} initial tokens</span>
+          <span className="text-text-primary font-semibold">💰 {organization.user_token_balance.toFixed(2)} your tokens</span>
+          <span className="text-text-disabled">Created {new Date(organization.created_at).toLocaleDateString()}</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-8">
+      <div className="border-b border-border-secondary mb-8">
         <div className="flex space-x-8">
           <button
             onClick={() => setActiveTab('markets')}
             className={`pb-4 px-1 font-medium transition ${
               activeTab === 'markets'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'border-b-2 border-text-primary text-text-primary'
+                : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             Markets
@@ -140,8 +147,8 @@ export default function OrganizationDetailPage() {
             onClick={() => setActiveTab('leaderboard')}
             className={`pb-4 px-1 font-medium transition ${
               activeTab === 'leaderboard'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'border-b-2 border-text-primary text-text-primary'
+                : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             Leaderboard
@@ -153,10 +160,10 @@ export default function OrganizationDetailPage() {
       {activeTab === 'markets' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Markets</h2>
+            <h2 className="text-2xl font-bold text-text-primary">Markets</h2>
             <button
               onClick={() => setShowCreateMarket(!showCreateMarket)}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
             >
               + Create Market
             </button>
@@ -164,61 +171,61 @@ export default function OrganizationDetailPage() {
 
           {/* Create Market Form */}
           {showCreateMarket && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Create Market</h3>
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-6">
+              <h3 className="text-xl font-bold text-text-primary mb-4">Create Market</h3>
               <form onSubmit={handleCreateMarket} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
                     Market Question
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
                     Description
                   </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
                     rows={3}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
                     Resolution Date
                   </label>
                   <input
                     type="datetime-local"
                     value={resolutionDate}
                     onChange={(e) => setResolutionDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent"
                     required
                   />
                 </div>
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-600">{error}</p>
+                  <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
+                    <p className="text-sm text-red-400">{error}</p>
                   </div>
                 )}
                 <div className="flex space-x-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+                    className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
                   >
                     Create
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateMarket(false)}
-                    className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300"
+                    className="px-6 py-2 bg-btn-secondary text-text-secondary font-medium rounded-lg hover:bg-btn-secondary-hover"
                   >
                     Cancel
                   </button>
@@ -235,11 +242,11 @@ export default function OrganizationDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-              <p className="text-gray-500 mb-4">No markets yet in this organization.</p>
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+              <p className="text-text-muted mb-4">No markets yet in this organization.</p>
               <button
                 onClick={() => setShowCreateMarket(true)}
-                className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+                className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover"
               >
                 Create First Market
               </button>
@@ -251,33 +258,38 @@ export default function OrganizationDetailPage() {
       {/* Leaderboard Tab */}
       {activeTab === 'leaderboard' && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Leaderboard</h2>
+          <h2 className="text-2xl font-bold text-text-primary mb-6">Leaderboard</h2>
 
-          {leaderboard.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          {leaderboardLoading ? (
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted mb-4"></div>
+              <p className="text-text-muted">Loading leaderboard...</p>
+            </div>
+          ) : leaderboard.length > 0 ? (
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
+              <table className="min-w-full divide-y divide-border-secondary">
+                <thead className="bg-bg-hover">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
                       Rank
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
                       Token Balance
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
                       Position Value
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-disabled uppercase">
                       Total Value
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-bg-card divide-y divide-border-secondary">
                   {leaderboard.map((entry) => (
-                    <tr key={entry.user_id} className="hover:bg-gray-50">
+                    <tr key={entry.user_id} className="hover:bg-bg-hover">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`text-2xl font-bold ${
@@ -287,24 +299,24 @@ export default function OrganizationDetailPage() {
                               ? 'text-gray-400'
                               : entry.rank === 3
                               ? 'text-orange-600'
-                              : 'text-gray-900'
+                              : 'text-text-primary'
                           }`}
                         >
                           {entry.rank}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{entry.name}</div>
-                        <div className="text-xs text-gray-500">{entry.email}</div>
+                        <div className="text-sm font-medium text-text-primary">{entry.name}</div>
+                        <div className="text-xs text-text-disabled">{entry.email}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
                         ${entry.token_balance.toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
                         ${entry.position_value.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-lg font-bold text-blue-600">
+                        <span className="text-lg font-bold text-text-primary">
                           ${entry.total_value.toFixed(2)}
                         </span>
                       </td>
@@ -314,8 +326,8 @@ export default function OrganizationDetailPage() {
               </table>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-              <p className="text-gray-500">Loading leaderboard...</p>
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+              <p className="text-text-muted">No members in this organization yet.</p>
             </div>
           )}
         </div>

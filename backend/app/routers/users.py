@@ -238,6 +238,7 @@ async def get_leaderboard(page: int = 1, page_size: int = 10):
             "$group": {
                 "_id": "$_id",
                 "name": {"$first": "$name"},
+                "email": {"$first": "$email"},
                 "token_balance": {"$first": "$token_balance"},
                 "total_position_value": {"$sum": "$position_value"}
             }
@@ -264,6 +265,7 @@ async def get_leaderboard(page: int = 1, page_size: int = 10):
             rank=rank,
             user_id=str(user["_id"]),
             name=user["name"],
+            email=user["email"],
             token_balance=user["token_balance"],
             position_value=round(user["total_position_value"], 2),
             total_value=round(user["total_value"], 2)
