@@ -15,22 +15,35 @@ services:
       context: ./backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
       - DATABASE_NAME=berkeley_markets
       - JWT_SECRET=${JWT_SECRET:-your-secret-key}
       - FRONTEND_URL=http://localhost:3000
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
       - mongodb
+    command: uvicorn app.main:socket_app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/lib:/app/lib
+      - ./frontend/types:/app/types
+      - ./frontend/public:/app/public
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_WS_URL=http://localhost:8000
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
 

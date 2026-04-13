@@ -280,6 +280,18 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link
+                    href="/"
+                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                  >
+                    Markets
+                  </Link>
+                  <Link
+                    href="/organizations"
+                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                  >
+                    Organizations
+                  </Link>
+                  <Link
                     href="/leaderboard"
                     className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
                   >

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { organizationsAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
-import type { Organization } from '@/types';
+import AuthModal from '@/components/AuthModal';
+import type { Organization, User } from '@/types';
 
 export default function OrganizationsPage() {
   const router = useRouter();
@@ -13,6 +14,8 @@ export default function OrganizationsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Create form state
   const [name, setName] = useState('');
@@ -24,12 +27,13 @@ export default function OrganizationsPage() {
   const [inviteCode, setInviteCode] = useState('');
 
   useEffect(() => {
-    const user = authStorage.getUser();
-    if (!user) {
-      router.push('/');
-      return;
+    const storedUser = authStorage.getUser();
+    setUser(storedUser);
+    if (storedUser) {
+      loadOrganizations();
+    } else {
+      setLoading(false);
     }
-    loadOrganizations();
   }, []);
 
   const loadOrganizations = async () => {
@@ -93,6 +97,12 @@ export default function OrganizationsPage() {
     );
   }
 
+  const handleAuthSuccess = (userData: User) => {
+    setUser(userData);
+    setShowAuthModal(false);
+    loadOrganizations();
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
@@ -103,21 +113,45 @@ export default function OrganizationsPage() {
         </p>
       </div>
 
-      {/* Action Links */}
-      <div className="flex space-x-8 mb-8">
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
-        >
-          + Create Organization
-        </button>
-        <button
-          onClick={() => setShowJoinForm(!showJoinForm)}
-          className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
-        >
-          Join with Invite
-        </button>
-      </div>
+      {!user ? (
+        <>
+          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center max-w-lg">
+            <h2 className="text-xl font-medium text-text-primary mb-2">Sign in to get started</h2>
+            <p className="text-text-muted mb-6">
+              Create your own organization or join one with an invite link.
+            </p>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-6 py-2 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover transition"
+            >
+              Sign In / Sign Up
+            </button>
+          </div>
+
+          {showAuthModal && (
+            <AuthModal
+              onClose={() => setShowAuthModal(false)}
+              onSuccess={handleAuthSuccess}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {/* Action Links */}
+          <div className="flex space-x-8 mb-8">
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
+            >
+              + Create Organization
+            </button>
+            <button
+              onClick={() => setShowJoinForm(!showJoinForm)}
+              className="text-text-primary font-medium hover:text-blue-500 transition cursor-pointer"
+            >
+              Join with Invite
+            </button>
+          </div>
 
       {/* Create Form */}
       {showCreateForm && (
@@ -274,6 +308,8 @@ export default function OrganizationsPage() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -108,6 +108,23 @@ export const marketsAPI = {
     return data;
   },
 
+  getPriceHistory: async (marketId: string, limit: number = 500): Promise<{
+    market_id: string;
+    price_history: Array<{
+      timestamp: string;
+      yes_price: number;
+      no_price: number;
+      source: string;
+    }>;
+    current_yes_price: number;
+    current_no_price: number;
+  }> => {
+    const { data } = await api.get(`/api/markets/${marketId}/price-history`, {
+      params: { limit }
+    });
+    return data;
+  },
+
   create: async (title: string, description: string, resolutionDate: string): Promise<Market> => {
     const { data } = await api.post('/api/markets', {
       title,
@@ -253,6 +270,30 @@ export const marketIdeasAPI = {
     const { data } = await api.post('/api/auth/market-ideas', { title, description });
     return data;
   },
+
+  listPublic: async (page: number = 1, pageSize: number = 20, statusFilter?: string): Promise<MarketIdeasResponse> => {
+    const { data } = await api.get('/api/auth/market-ideas/public', {
+      params: { page, page_size: pageSize, status_filter: statusFilter },
+    });
+    return data;
+  },
+
+  listPublicAuth: async (page: number = 1, pageSize: number = 20, statusFilter?: string): Promise<MarketIdeasResponse> => {
+    const { data } = await api.get('/api/auth/market-ideas/public/auth', {
+      params: { page, page_size: pageSize, status_filter: statusFilter },
+    });
+    return data;
+  },
+
+  vote: async (ideaId: string, vote: 'like' | 'dislike'): Promise<{ message: string; like_count: number; dislike_count: number; user_vote: string }> => {
+    const { data } = await api.post(`/api/auth/market-ideas/${ideaId}/vote`, { vote });
+    return data;
+  },
+
+  removeVote: async (ideaId: string): Promise<{ message: string; like_count: number; dislike_count: number; user_vote: null }> => {
+    const { data } = await api.delete(`/api/auth/market-ideas/${ideaId}/vote`);
+    return data;
+  },
 };
 
 export default api;
@@ -354,6 +395,11 @@ export const organizationsAPI = {
 
   lockBet: async (orgId: string, betId: string) => {
     const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/lock`);
+    return data;
+  },
+
+  unlockBet: async (orgId: string, betId: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/unlock`);
     return data;
   },
 

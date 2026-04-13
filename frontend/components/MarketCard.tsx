@@ -19,6 +19,19 @@ export default function MarketCard({ market }: MarketCardProps) {
           {market.title}
         </h3>
 
+        {market.status === 'resolved' && market.resolved_outcome && (
+          <div className="mb-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-text-muted">Outcome</span>
+            <p
+              className={`text-base font-semibold mt-0.5 ${
+                market.resolved_outcome === 'YES' ? 'text-green-400' : 'text-red-400'
+              }`}
+            >
+              Resolved {market.resolved_outcome}
+            </p>
+          </div>
+        )}
+
         {/* Description */}
         <p className="text-sm text-text-muted mb-4 line-clamp-2">
           {market.description}

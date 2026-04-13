@@ -2,16 +2,20 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from datetime import timedelta
 from bson import ObjectId
 import os
+from dotenv import load_dotenv
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+
+load_dotenv()
 
 from pydantic import BaseModel
 from app.models import (
     UserCreate, UserLogin, UserResponse, PortfolioResponse, PositionResponse,
     OrderResponse, LeaderboardEntry, LeaderboardResponse, UserListEntry,
     UserListResponse, MakeAdminRequest, MarketIdeaCreate, MarketIdeaResponse,
-    MarketIdeasListResponse
+    MarketIdeasListResponse, MarketIdeaVote
 )
+from typing import Optional
 from app.auth import get_password_hash, verify_password, create_access_token, get_current_user, get_current_admin, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.database import get_database
 from datetime import datetime
@@ -213,7 +217,9 @@ async def get_portfolio(current_user: dict = Depends(get_current_user)):
                 yes_shares=pos["yes_shares"],
                 no_shares=pos["no_shares"],
                 avg_yes_price=pos["avg_yes_price"],
-                avg_no_price=pos["avg_no_price"]
+                avg_no_price=pos["avg_no_price"],
+                market_status=market.get("status", "active"),
+                resolved_outcome=market.get("resolved_outcome"),
             ))
 
     # Get open orders
@@ -490,7 +496,9 @@ async def submit_market_idea(
         "title": idea.title,
         "description": idea.description,
         "status": "pending",
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "likes": [],
+        "dislikes": []
     }
 
     result = await db.market_ideas.insert_one(idea_dict)
@@ -502,7 +510,10 @@ async def submit_market_idea(
         title=idea.title,
         description=idea.description,
         status="pending",
-        created_at=idea_dict["created_at"]
+        created_at=idea_dict["created_at"],
+        like_count=0,
+        dislike_count=0,
+        user_vote=None
     )
 
 
@@ -535,6 +546,8 @@ async def list_market_ideas(
 
     ideas = []
     async for idea in cursor:
+        likes = idea.get("likes", [])
+        dislikes = idea.get("dislikes", [])
         ideas.append(MarketIdeaResponse(
             id=str(idea["_id"]),
             user_id=str(idea["user_id"]),
@@ -542,7 +555,10 @@ async def list_market_ideas(
             title=idea["title"],
             description=idea["description"],
             status=idea["status"],
-            created_at=idea["created_at"]
+            created_at=idea["created_at"],
+            like_count=len(likes),
+            dislike_count=len(dislikes),
+            user_vote=None
         ))
 
     total_pages = (total + page_size - 1) // page_size
@@ -589,3 +605,217 @@ async def update_idea_status(
         )
 
     return {"message": f"Idea status updated to {new_status}"}
+
+
+# Public Market Ideas Endpoints
+
+@router.get("/market-ideas/public", response_model=MarketIdeasListResponse)
+async def list_public_market_ideas(
+    page: int = 1,
+    page_size: int = 20,
+    status_filter: Optional[str] = None
+):
+    """List all market ideas (public, no auth required)"""
+    db = await get_database()
+
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = 20
+    if page_size > 100:
+        page_size = 100
+
+    query = {}
+    if status_filter:
+        query["status"] = status_filter
+
+    total = await db.market_ideas.count_documents(query)
+    skip = (page - 1) * page_size
+
+    # Sort by like_count (computed) - we'll sort by (likes - dislikes) count
+    cursor = db.market_ideas.find(query).sort("created_at", -1).skip(skip).limit(page_size)
+
+    ideas = []
+    async for idea in cursor:
+        likes = idea.get("likes", [])
+        dislikes = idea.get("dislikes", [])
+        ideas.append(MarketIdeaResponse(
+            id=str(idea["_id"]),
+            user_id=str(idea["user_id"]),
+            user_name=idea["user_name"],
+            title=idea["title"],
+            description=idea["description"],
+            status=idea["status"],
+            created_at=idea["created_at"],
+            like_count=len(likes),
+            dislike_count=len(dislikes),
+            user_vote=None  # No auth, so no user vote
+        ))
+
+    total_pages = (total + page_size - 1) // page_size
+
+    return MarketIdeasListResponse(
+        ideas=ideas,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.get("/market-ideas/public/auth", response_model=MarketIdeasListResponse)
+async def list_public_market_ideas_auth(
+    page: int = 1,
+    page_size: int = 20,
+    status_filter: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all market ideas with user's vote status (requires auth)"""
+    db = await get_database()
+
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = 20
+    if page_size > 100:
+        page_size = 100
+
+    query = {}
+    if status_filter:
+        query["status"] = status_filter
+
+    total = await db.market_ideas.count_documents(query)
+    skip = (page - 1) * page_size
+
+    cursor = db.market_ideas.find(query).sort("created_at", -1).skip(skip).limit(page_size)
+
+    user_id = current_user["_id"]
+    ideas = []
+    async for idea in cursor:
+        likes = idea.get("likes", [])
+        dislikes = idea.get("dislikes", [])
+
+        # Determine user's vote
+        user_vote = None
+        if user_id in likes:
+            user_vote = "like"
+        elif user_id in dislikes:
+            user_vote = "dislike"
+
+        ideas.append(MarketIdeaResponse(
+            id=str(idea["_id"]),
+            user_id=str(idea["user_id"]),
+            user_name=idea["user_name"],
+            title=idea["title"],
+            description=idea["description"],
+            status=idea["status"],
+            created_at=idea["created_at"],
+            like_count=len(likes),
+            dislike_count=len(dislikes),
+            user_vote=user_vote
+        ))
+
+    total_pages = (total + page_size - 1) // page_size
+
+    return MarketIdeasListResponse(
+        ideas=ideas,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.post("/market-ideas/{idea_id}/vote")
+async def vote_on_market_idea(
+    idea_id: str,
+    vote_data: MarketIdeaVote,
+    current_user: dict = Depends(get_current_user)
+):
+    """Vote (like/dislike) on a market idea"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(idea_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid idea ID"
+        )
+
+    idea = await db.market_ideas.find_one({"_id": ObjectId(idea_id)})
+    if not idea:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Market idea not found"
+        )
+
+    user_id = current_user["_id"]
+    likes = idea.get("likes", [])
+    dislikes = idea.get("dislikes", [])
+
+    # Remove from both lists first (to handle changing vote)
+    if user_id in likes:
+        likes.remove(user_id)
+    if user_id in dislikes:
+        dislikes.remove(user_id)
+
+    # Add to appropriate list
+    if vote_data.vote == "like":
+        likes.append(user_id)
+    else:
+        dislikes.append(user_id)
+
+    await db.market_ideas.update_one(
+        {"_id": ObjectId(idea_id)},
+        {"$set": {"likes": likes, "dislikes": dislikes}}
+    )
+
+    return {
+        "message": f"Vote recorded: {vote_data.vote}",
+        "like_count": len(likes),
+        "dislike_count": len(dislikes),
+        "user_vote": vote_data.vote
+    }
+
+
+@router.delete("/market-ideas/{idea_id}/vote")
+async def remove_vote_on_market_idea(
+    idea_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove vote from a market idea"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(idea_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid idea ID"
+        )
+
+    idea = await db.market_ideas.find_one({"_id": ObjectId(idea_id)})
+    if not idea:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Market idea not found"
+        )
+
+    user_id = current_user["_id"]
+    likes = idea.get("likes", [])
+    dislikes = idea.get("dislikes", [])
+
+    # Remove from both lists
+    if user_id in likes:
+        likes.remove(user_id)
+    if user_id in dislikes:
+        dislikes.remove(user_id)
+
+    await db.market_ideas.update_one(
+        {"_id": ObjectId(idea_id)},
+        {"$set": {"likes": likes, "dislikes": dislikes}}
+    )
+
+    return {
+        "message": "Vote removed",
+        "like_count": len(likes),
+        "dislike_count": len(dislikes),
+        "user_vote": None
+    }

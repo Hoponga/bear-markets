@@ -88,6 +88,52 @@ async def get_orderbook(market_id: str):
     return orderbook
 
 
+@router.get("/{market_id}/price-history")
+async def get_price_history(market_id: str, limit: int = 500):
+    """Get price history for a market"""
+    if not ObjectId.is_valid(market_id):
+        raise HTTPException(status_code=400, detail="Invalid market ID")
+
+    db = await get_database()
+    market = await db.markets.find_one({"_id": ObjectId(market_id)})
+
+    if not market:
+        raise HTTPException(status_code=404, detail="Market not found")
+
+    market_obj_id = ObjectId(market_id)
+
+    # Get price history from the price_history collection
+    history_cursor = db.price_history.find(
+        {"market_id": market_obj_id}
+    ).sort("timestamp", 1).limit(limit)
+
+    price_history = []
+
+    async for entry in history_cursor:
+        price_history.append({
+            "timestamp": entry["timestamp"].isoformat(),
+            "yes_price": entry["yes_price"],
+            "no_price": entry["no_price"],
+            "source": entry.get("source", "unknown")
+        })
+
+    # If no price history exists, add the initial price point
+    if not price_history:
+        price_history.append({
+            "timestamp": market["created_at"].isoformat(),
+            "yes_price": 0.5,
+            "no_price": 0.5,
+            "source": "initial"
+        })
+
+    return {
+        "market_id": market_id,
+        "price_history": price_history,
+        "current_yes_price": market.get("current_yes_price", 0.5),
+        "current_no_price": market.get("current_no_price", 0.5)
+    }
+
+
 @router.post("", response_model=MarketResponse)
 async def create_market(
     market_data: MarketCreate,
@@ -110,6 +156,15 @@ async def create_market(
     }
 
     result = await db.markets.insert_one(market_dict)
+
+    # Store initial price history entry
+    await db.price_history.insert_one({
+        "market_id": result.inserted_id,
+        "yes_price": 0.5,
+        "no_price": 0.5,
+        "source": "initial",
+        "timestamp": market_dict["created_at"]
+    })
 
     return MarketResponse(
         id=str(result.inserted_id),

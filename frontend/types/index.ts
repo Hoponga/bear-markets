@@ -18,6 +18,7 @@ export interface Market {
   current_no_price: number;
   total_volume: number;
   organization_id?: string;
+  invite_code?: string;
 }
 
 export interface Organization {
@@ -61,6 +62,10 @@ export interface Position {
   no_shares: number;
   avg_yes_price: number;
   avg_no_price: number;
+  /** Present when API returns portfolio; active markets still trading */
+  market_status?: 'active' | 'resolved';
+  /** Set when the market has resolved */
+  resolved_outcome?: 'YES' | 'NO' | null;
 }
 
 export interface Portfolio {
@@ -143,6 +148,9 @@ export interface MarketIdea {
   description: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  like_count: number;
+  dislike_count: number;
+  user_vote: 'like' | 'dislike' | null;
 }
 
 export interface MarketIdeasResponse {

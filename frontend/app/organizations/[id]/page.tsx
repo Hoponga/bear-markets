@@ -18,7 +18,6 @@ export default function OrganizationDetailPage() {
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'bets' | 'leaderboard' | 'admin'>('bets');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Create bet modal
@@ -36,7 +35,7 @@ export default function OrganizationDetailPage() {
   useEffect(() => {
     const user = authStorage.getUser();
     if (!user) { router.push('/'); return; }
-    setCurrentUserId(user.id);
+
     loadOrganization();
     loadBets();
     loadLeaderboard();
@@ -212,6 +211,7 @@ export default function OrganizationDetailPage() {
               ))}
             </div>
           )}
+
         </div>
       )}
 

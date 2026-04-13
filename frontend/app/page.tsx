@@ -1,62 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { marketsAPI, marketIdeasAPI } from '@/lib/api';
-import { authStorage } from '@/lib/auth';
+import { marketsAPI } from '@/lib/api';
 import Link from 'next/link';
 import MarketCard from '@/components/MarketCard';
-import type { Market, User } from '@/types';
+import type { Market } from '@/types';
 
 export default function HomePage() {
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const [activeMarkets, setActiveMarkets] = useState<Market[]>([]);
+  const [resolvedMarkets, setResolvedMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [user, setUser] = useState<User | null>(null);
-
-  // Market idea form state
-  const [showIdeaForm, setShowIdeaForm] = useState(false);
-  const [ideaTitle, setIdeaTitle] = useState('');
-  const [ideaDescription, setIdeaDescription] = useState('');
-  const [ideaLoading, setIdeaLoading] = useState(false);
-  const [ideaSuccess, setIdeaSuccess] = useState('');
-  const [ideaError, setIdeaError] = useState('');
 
   useEffect(() => {
     loadMarkets();
-    setUser(authStorage.getUser());
   }, []);
 
   const loadMarkets = async () => {
     try {
-      const data = await marketsAPI.list('active');
-      setMarkets(data);
+      const [active, resolved] = await Promise.all([
+        marketsAPI.list('active'),
+        marketsAPI.list('resolved'),
+      ]);
+      setActiveMarkets(active);
+      setResolvedMarkets(resolved);
     } catch (err: any) {
       setError('Failed to load markets');
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSubmitIdea = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIdeaError('');
-    setIdeaSuccess('');
-    setIdeaLoading(true);
-
-    try {
-      await marketIdeasAPI.submit(ideaTitle, ideaDescription);
-      setIdeaSuccess('Your market idea has been submitted for review!');
-      setIdeaTitle('');
-      setIdeaDescription('');
-      setTimeout(() => {
-        setShowIdeaForm(false);
-        setIdeaSuccess('');
-      }, 2000);
-    } catch (err: any) {
-      setIdeaError(err.response?.data?.detail || 'Failed to submit idea');
-    } finally {
-      setIdeaLoading(false);
     }
   };
 
@@ -73,71 +45,9 @@ export default function HomePage() {
         </p>
         <p className="text-text-muted text-sm">
           Want private markets with friends or your club? Check out <Link href="/organizations" className="text-text-secondary hover:text-text-primary underline">Organizations</Link>.{' '}
-          <Link href="/about" className="text-text-secondary hover:text-text-primary underline">Learn more</Link> about how it works{user && (
-            <>, or <button onClick={() => setShowIdeaForm(!showIdeaForm)} className="text-text-secondary hover:text-text-primary underline">{showIdeaForm ? 'cancel' : 'suggest a market'}</button></>
-          )}.
+          <Link href="/about" className="text-text-secondary hover:text-text-primary underline">Learn more</Link> about how it works, or <Link href="/suggest" className="text-text-secondary hover:text-text-primary underline">suggest a market</Link>.
         </p>
       </div>
-
-      {/* Market Idea Form */}
-      {showIdeaForm && user && (
-        <div className="mb-8 bg-bg-card rounded-lg shadow-lg border border-border-primary p-6">
-          <h2 className="text-xl font-medium text-text-primary mb-4">Suggest a New Market</h2>
-          <p className="text-text-muted mb-4">
-            Have an idea for a prediction market? Submit it here and our team will review it.
-          </p>
-
-          <form onSubmit={handleSubmitIdea} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Market Title
-              </label>
-              <input
-                type="text"
-                value={ideaTitle}
-                onChange={(e) => setIdeaTitle(e.target.value)}
-                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
-                placeholder="e.g., Will the new student center open by Fall 2025?"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Description & Resolution Criteria
-              </label>
-              <textarea
-                value={ideaDescription}
-                onChange={(e) => setIdeaDescription(e.target.value)}
-                className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
-                rows={4}
-                placeholder="Describe your market idea and how it should be resolved..."
-                required
-              />
-            </div>
-
-            {ideaError && (
-              <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
-                <p className="text-sm text-red-400">{ideaError}</p>
-              </div>
-            )}
-
-            {ideaSuccess && (
-              <div className="bg-green-900/50 border border-green-700 rounded-lg p-3">
-                <p className="text-sm text-green-400">{ideaSuccess}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={ideaLoading}
-              className="text-text-primary font-medium hover:text-blue-500 disabled:text-text-disabled transition cursor-pointer"
-            >
-              {ideaLoading ? 'Submitting...' : 'Submit Idea'}
-            </button>
-          </form>
-        </div>
-      )}
 
       {/* Loading State */}
       {loading && (
@@ -154,19 +64,36 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Markets Grid */}
+      {/* Markets: active first, resolved at bottom */}
       {!loading && !error && (
         <>
-          {markets.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {markets.map((market) => (
-                <MarketCard key={market.id} market={market} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
-              <p className="text-text-muted text-lg">No active markets yet.</p>
-              <p className="text-text-disabled mt-2">Check back soon!</p>
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">Active markets</h2>
+            {activeMarkets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeMarkets.map((market) => (
+                  <MarketCard key={market.id} market={market} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
+                <p className="text-text-muted text-lg">No active markets yet.</p>
+                <p className="text-text-disabled mt-2">Check back soon!</p>
+              </div>
+            )}
+          </div>
+
+          {resolvedMarkets.length > 0 && (
+            <div className="border-t border-border-secondary pt-10">
+              <h2 className="text-lg font-semibold text-text-primary mb-2">Resolved markets</h2>
+              <p className="text-sm text-text-muted mb-4">
+                Past outcomes—click a market to see details.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-95">
+                {resolvedMarkets.map((market) => (
+                  <MarketCard key={market.id} market={market} />
+                ))}
+              </div>
             </div>
           )}
         </>

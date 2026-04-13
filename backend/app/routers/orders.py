@@ -6,7 +6,7 @@ from datetime import datetime
 from app.models import OrderCreate, OrderResponse, MarketOrderCreate, MarketOrderResponse
 from app.auth import get_current_user
 from app.database import get_database
-from app.services.orderbook import match_orders, get_orderbook_snapshot
+from app.services.orderbook import match_orders, get_orderbook_snapshot, update_market_price
 from app.services.share_minting import attempt_share_minting
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -111,9 +111,11 @@ async def create_order(
     # Refresh order from DB to get latest state
     order_dict = await db.orders.find_one({"_id": result.inserted_id})
 
+    # Update market price and emit updates
+    orderbook, _ = await update_market_price(db, market_id, sio)
+
     # Emit orderbook update via WebSocket
     if sio:
-        orderbook = await get_orderbook_snapshot(market_id)
         await sio.emit('orderbook_update', {
             'market_id': str(market_id),
             'orderbook': {
@@ -131,17 +133,6 @@ async def create_order(
                 'NO': orderbook.midpoint_no
             }
         })
-
-        # Update market prices
-        await db.markets.update_one(
-            {"_id": market_id},
-            {
-                "$set": {
-                    "current_yes_price": orderbook.midpoint_yes,
-                    "current_no_price": orderbook.midpoint_no
-                }
-            }
-        )
 
     return OrderResponse(
         id=str(order_dict["_id"]),
@@ -220,9 +211,11 @@ async def cancel_order(
         {"$set": {"status": "CANCELLED"}}
     )
 
+    # Update market price and emit updates
+    orderbook, _ = await update_market_price(db, order["market_id"], sio)
+
     # Emit orderbook update
     if sio:
-        orderbook = await get_orderbook_snapshot(order["market_id"])
         await sio.emit('orderbook_update', {
             'market_id': str(order["market_id"]),
             'orderbook': {
@@ -422,22 +415,21 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
                 # Try share minting
                 minted, _ = await attempt_share_minting(db, market_id, order_dict, sio)
 
+                # Get updated order
+                updated_order = await db.orders.find_one({"_id": result.inserted_id})
+
                 if minted > 0:
-                    # Get updated order
-                    updated_order = await db.orders.find_one({"_id": result.inserted_id})
                     total_shares += minted
                     total_spent += minted * order_dict["price"]
 
-                    # Cancel any remaining unfilled portion
-                    await db.orders.update_one(
-                        {"_id": result.inserted_id},
-                        {"$set": {"status": "CANCELLED" if updated_order["filled_quantity"] == 0 else "PARTIAL"}}
+                # Cancel any remaining unfilled portion
+                if updated_order:
+                    new_status = "FILLED" if updated_order["filled_quantity"] >= updated_order["quantity"] else (
+                        "PARTIAL" if updated_order["filled_quantity"] > 0 else "CANCELLED"
                     )
-                else:
-                    # Nothing minted, cancel the order
                     await db.orders.update_one(
                         {"_id": result.inserted_id},
-                        {"$set": {"status": "CANCELLED"}}
+                        {"$set": {"status": new_status}}
                     )
 
     # Update orderbook snapshot

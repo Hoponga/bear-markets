@@ -121,6 +121,7 @@ function JoinOrganizationContent() {
         <AuthModal
           onClose={handleAuthClose}
           onSuccess={handleAuthSuccess}
+          title="Sign In To Join Organization"
         />
       )}
     </>

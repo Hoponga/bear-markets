@@ -22,17 +22,22 @@ declare global {
 interface AuthModalProps {
   onClose: () => void;
   onSuccess: (user: User) => void;
+  title?: string;
 }
 
-export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
+export default function AuthModal({ onClose, onSuccess, title }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
   useEffect(() => {
-    // Load Google Identity Services script
+    // Only load Google Identity Services if client ID is configured
+    if (!googleClientId) return;
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -41,9 +46,11 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
-  }, []);
+  }, [googleClientId]);
 
   const initializeGoogle = () => {
     if (window.google) {
@@ -105,7 +112,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-text-primary">
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {title || (isLogin ? 'Sign In' : 'Create Account')}
             </h2>
             <button
               onClick={onClose}
@@ -115,19 +122,23 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
             </button>
           </div>
 
-          {/* Google Sign-In */}
-          <div className="mb-4">
-            <div id="google-signin-button" className="w-full flex justify-center"></div>
-          </div>
+          {/* Google Sign-In - only show if client ID is configured */}
+          {googleClientId && (
+            <>
+              <div className="mb-4">
+                <div id="google-signin-button" className="w-full flex justify-center"></div>
+              </div>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border-secondary"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-bg-card text-text-muted">or</span>
-            </div>
-          </div>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border-secondary"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-bg-card text-text-muted">or</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
