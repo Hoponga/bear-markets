@@ -346,3 +346,60 @@ def calculate_midpoint(side: OrderbookSide) -> float:
         return best_ask
     else:
         return 0.5
+
+
+async def store_price_history(db, market_id: ObjectId, yes_price: float, no_price: float, source: str = "orderbook"):
+    """Store a price history entry if the price has changed"""
+    # Get the most recent price entry
+    last_entry = await db.price_history.find_one(
+        {"market_id": market_id},
+        sort=[("timestamp", -1)]
+    )
+
+    # Only store if price has changed (or no previous entry)
+    if last_entry is None or \
+       abs(last_entry["yes_price"] - yes_price) > 0.0001 or \
+       abs(last_entry["no_price"] - no_price) > 0.0001:
+
+        entry = {
+            "market_id": market_id,
+            "yes_price": yes_price,
+            "no_price": no_price,
+            "source": source,  # "orderbook", "trade", "initial"
+            "timestamp": datetime.utcnow()
+        }
+        await db.price_history.insert_one(entry)
+        return True
+    return False
+
+
+async def update_market_price(db, market_id: ObjectId, sio=None):
+    """Recalculate and store market price from orderbook, emit update if changed"""
+    orderbook = await get_orderbook_snapshot(market_id)
+    yes_price = orderbook.midpoint_yes
+    no_price = orderbook.midpoint_no
+
+    # Update market document
+    await db.markets.update_one(
+        {"_id": market_id},
+        {
+            "$set": {
+                "current_yes_price": yes_price,
+                "current_no_price": no_price
+            }
+        }
+    )
+
+    # Store price history
+    price_changed = await store_price_history(db, market_id, yes_price, no_price, "orderbook")
+
+    # Emit price update via WebSocket if price changed
+    if sio and price_changed:
+        await sio.emit('price_update', {
+            'market_id': str(market_id),
+            'yes_price': yes_price,
+            'no_price': no_price,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    return orderbook, price_changed

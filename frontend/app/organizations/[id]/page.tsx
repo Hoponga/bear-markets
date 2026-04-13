@@ -133,6 +133,16 @@ export default function OrganizationDetailPage() {
     }
   };
 
+  const handleUnlockBet = async (betId: string) => {
+    if (!confirm('Re-open this bet so members can join again?')) return;
+    try {
+      await organizationsAPI.unlockBet(orgId, betId);
+      await loadBets();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to unlock bet');
+    }
+  };
+
   const handleResolveBet = async (betId: string, outcome: 'YES' | 'NO') => {
     if (!confirm(`Resolve this bet as ${outcome}?`)) return;
     try {
@@ -351,6 +361,10 @@ export default function OrganizationDetailPage() {
 
                     {bet.created_by === currentUserId && bet.status === 'open' && (
                       <button onClick={() => handleLockBet(bet.id)} className="px-3 py-1 border border-border-secondary text-text-muted text-sm rounded hover:text-text-primary">Lock</button>
+                    )}
+
+                    {bet.created_by === currentUserId && bet.status === 'locked' && (
+                      <button onClick={() => handleUnlockBet(bet.id)} className="px-3 py-1 border border-yellow-700 text-yellow-400 text-sm rounded hover:bg-yellow-900/30">Unlock</button>
                     )}
 
                     {bet.created_by === currentUserId && (bet.status === 'open' || bet.status === 'locked') && (

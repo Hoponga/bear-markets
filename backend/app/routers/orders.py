@@ -6,7 +6,7 @@ from datetime import datetime
 from app.models import OrderCreate, OrderResponse, MarketOrderCreate, MarketOrderResponse
 from app.auth import get_current_user
 from app.database import get_database
-from app.services.orderbook import match_orders, get_orderbook_snapshot
+from app.services.orderbook import match_orders, get_orderbook_snapshot, update_market_price
 from app.services.share_minting import attempt_share_minting
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -111,9 +111,11 @@ async def create_order(
     # Refresh order from DB to get latest state
     order_dict = await db.orders.find_one({"_id": result.inserted_id})
 
+    # Update market price and emit updates
+    orderbook, _ = await update_market_price(db, market_id, sio)
+
     # Emit orderbook update via WebSocket
     if sio:
-        orderbook = await get_orderbook_snapshot(market_id)
         await sio.emit('orderbook_update', {
             'market_id': str(market_id),
             'orderbook': {
@@ -131,17 +133,6 @@ async def create_order(
                 'NO': orderbook.midpoint_no
             }
         })
-
-        # Update market prices
-        await db.markets.update_one(
-            {"_id": market_id},
-            {
-                "$set": {
-                    "current_yes_price": orderbook.midpoint_yes,
-                    "current_no_price": orderbook.midpoint_no
-                }
-            }
-        )
 
     return OrderResponse(
         id=str(order_dict["_id"]),
@@ -220,9 +211,11 @@ async def cancel_order(
         {"$set": {"status": "CANCELLED"}}
     )
 
+    # Update market price and emit updates
+    orderbook, _ = await update_market_price(db, order["market_id"], sio)
+
     # Emit orderbook update
     if sio:
-        orderbook = await get_orderbook_snapshot(order["market_id"])
         await sio.emit('orderbook_update', {
             'market_id': str(order["market_id"]),
             'orderbook': {

@@ -209,7 +209,12 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
                 className="w-full px-4 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
                 required
               />
-              <p className="text-xs text-text-disabled mt-1">Between $0.01 and $0.99</p>
+              <p className="text-xs text-text-disabled mt-1">
+                {orderType === 'BUY'
+                  ? 'Maximum price per share—you will not buy for higher than this.'
+                  : 'Minimum price per share—you will not sell for lower than this.'}{' '}
+                <span className="text-text-muted">Between $0.01 and $0.99.</span>
+              </p>
             </div>
 
             <div>

@@ -28,6 +28,7 @@ async def connect_to_mongo():
     await database.orders.create_index([("user_id", ASCENDING)])
     await database.positions.create_index([("user_id", ASCENDING), ("market_id", ASCENDING)], unique=True)
     await database.trades.create_index([("market_id", ASCENDING)])
+    await database.price_history.create_index([("market_id", ASCENDING), ("timestamp", ASCENDING)])
 
     print("Connected to MongoDB")
 

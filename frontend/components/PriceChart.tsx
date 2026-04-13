@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useTradeUpdates, socketManager } from '@/lib/socket';
+import { usePriceUpdates, socketManager } from '@/lib/socket';
+import { marketsAPI } from '@/lib/api';
 
 interface PriceChartProps {
   marketId: string;
@@ -15,22 +16,60 @@ interface PricePoint {
 }
 
 export default function PriceChart({ marketId }: PriceChartProps) {
-  const [priceHistory, setPriceHistory] = useState<PricePoint[]>([
-    { timestamp: new Date().toISOString(), yes_price: 0.5, no_price: 0.5 },
-  ]);
+  const [priceHistory, setPriceHistory] = useState<PricePoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const latestPricesRef = useRef({ yes_price: 0.5, no_price: 0.5 });
 
+  // Fetch historical price data on mount
+  useEffect(() => {
+    const fetchPriceHistory = async () => {
+      try {
+        const data = await marketsAPI.getPriceHistory(marketId);
+        const history = data.price_history.map(point => ({
+          timestamp: point.timestamp,
+          yes_price: point.yes_price,
+          no_price: point.no_price,
+        }));
+        setPriceHistory(history);
+
+        // Update latest prices reference
+        if (history.length > 0) {
+          const lastPoint = history[history.length - 1];
+          latestPricesRef.current = {
+            yes_price: lastPoint.yes_price,
+            no_price: lastPoint.no_price,
+          };
+        }
+      } catch (err) {
+        console.error('Failed to fetch price history:', err);
+        // Fallback to default starting point
+        setPriceHistory([
+          { timestamp: new Date().toISOString(), yes_price: 0.5, no_price: 0.5 }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPriceHistory();
+  }, [marketId]);
+
+  // Subscribe to real-time price updates
   useEffect(() => {
     socketManager.connect();
     socketManager.subscribeMarket(marketId);
 
-    const unsubscribe = useTradeUpdates(marketId, (trade) => {
+    const unsubscribe = usePriceUpdates(marketId, (data) => {
+      // Update reference
+      latestPricesRef.current = { yes_price: data.yes_price, no_price: data.no_price };
+
       const newPoint: PricePoint = {
-        timestamp: trade.timestamp,
-        yes_price: trade.side === 'YES' ? trade.price : priceHistory[priceHistory.length - 1]?.yes_price || 0.5,
-        no_price: trade.side === 'NO' ? trade.price : priceHistory[priceHistory.length - 1]?.no_price || 0.5,
+        timestamp: data.timestamp,
+        yes_price: data.yes_price,
+        no_price: data.no_price,
       };
 
-      setPriceHistory((prev) => [...prev.slice(-50), newPoint]); // Keep last 50 points
+      setPriceHistory((prev) => [...prev, newPoint]);
     });
 
     return () => {
@@ -66,7 +105,11 @@ export default function PriceChart({ marketId }: PriceChartProps) {
     <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6">
       <h3 className="text-lg font-semibold text-text-primary mb-4">Price History</h3>
 
-      {formatData.length > 1 ? (
+      {loading ? (
+        <div className="h-[300px] flex items-center justify-center text-text-disabled">
+          <p>Loading price history...</p>
+        </div>
+      ) : formatData.length > 1 ? (
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={formatData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

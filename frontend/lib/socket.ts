@@ -33,6 +33,10 @@ class SocketManager {
       this.emit('trade_executed', data);
     });
 
+    this.socket.on('price_update', (data) => {
+      this.emit('price_update', data);
+    });
+
     this.socket.on('portfolio_update', (data) => {
       this.emit('portfolio_update', data);
     });
@@ -104,6 +108,17 @@ export const useTradeUpdates = (
   callback: (trade: Trade) => void
 ) => {
   return socketManager.on('trade_executed', (data) => {
+    if (data.market_id === marketId) {
+      callback(data);
+    }
+  });
+};
+
+export const usePriceUpdates = (
+  marketId: string,
+  callback: (data: { market_id: string; yes_price: number; no_price: number; timestamp: string }) => void
+) => {
+  return socketManager.on('price_update', (data) => {
     if (data.market_id === marketId) {
       callback(data);
     }

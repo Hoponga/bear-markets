@@ -108,6 +108,23 @@ export const marketsAPI = {
     return data;
   },
 
+  getPriceHistory: async (marketId: string, limit: number = 500): Promise<{
+    market_id: string;
+    price_history: Array<{
+      timestamp: string;
+      yes_price: number;
+      no_price: number;
+      source: string;
+    }>;
+    current_yes_price: number;
+    current_no_price: number;
+  }> => {
+    const { data } = await api.get(`/api/markets/${marketId}/price-history`, {
+      params: { limit }
+    });
+    return data;
+  },
+
   create: async (title: string, description: string, resolutionDate: string): Promise<Market> => {
     const { data } = await api.post('/api/markets', {
       title,
@@ -370,6 +387,11 @@ export const organizationsAPI = {
 
   lockBet: async (orgId: string, betId: string) => {
     const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/lock`);
+    return data;
+  },
+
+  unlockBet: async (orgId: string, betId: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/unlock`);
     return data;
   },
 

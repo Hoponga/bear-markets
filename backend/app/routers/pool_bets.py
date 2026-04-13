@@ -320,6 +320,41 @@ async def lock_pool_bet(
     return {"message": "Bet locked successfully"}
 
 
+@router.post("/{org_id}/bets/{bet_id}/unlock")
+async def unlock_pool_bet(
+    org_id: str,
+    bet_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Re-open a locked pool bet (creator only) - members can join again"""
+    db = await get_database()
+    await verify_org_member(db, org_id, current_user["_id"])
+
+    if not ObjectId.is_valid(bet_id):
+        raise HTTPException(status_code=400, detail="Invalid bet ID")
+
+    bet = await db.pool_bets.find_one({
+        "_id": ObjectId(bet_id),
+        "organization_id": ObjectId(org_id)
+    })
+
+    if not bet:
+        raise HTTPException(status_code=404, detail="Bet not found")
+
+    if bet["created_by"] != current_user["_id"]:
+        raise HTTPException(status_code=403, detail="Only the creator can unlock the bet")
+
+    if bet["status"] != "locked":
+        raise HTTPException(status_code=400, detail="Bet is not locked")
+
+    await db.pool_bets.update_one(
+        {"_id": ObjectId(bet_id)},
+        {"$set": {"status": "open"}}
+    )
+
+    return {"message": "Bet unlocked — members can join again"}
+
+
 @router.post("/{org_id}/bets/{bet_id}/resolve")
 async def resolve_pool_bet(
     org_id: str,
