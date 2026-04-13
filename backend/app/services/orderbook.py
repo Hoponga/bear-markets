@@ -4,6 +4,7 @@ from typing import Optional
 from collections import defaultdict
 
 from app.models import OrderbookResponse, OrderbookSide, OrderbookLevel
+from app.services.user_notifications import notify_limit_order_matched
 
 
 async def match_orders(db, market_id: ObjectId, new_order: dict, sio) -> int:
@@ -19,6 +20,9 @@ async def match_orders(db, market_id: ObjectId, new_order: dict, sio) -> int:
 
 async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
     """Match a BUY order with existing SELL orders"""
+    market_doc = await db.markets.find_one({"_id": market_id})
+    market_title = (market_doc or {}).get("title", "Market")
+
     # Find matching SELL orders on the same side at or below the buy price
     matching_sells = await db.orders.find({
         "market_id": market_id,
@@ -119,6 +123,19 @@ async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
         total_filled += trade_quantity
         remaining_quantity -= trade_quantity
 
+        # Notify resting seller their limit was hit
+        if sell_order["user_id"] != buy_order["user_id"]:
+            await notify_limit_order_matched(
+                db,
+                sell_order["user_id"],
+                market_title=market_title,
+                side=buy_order["side"],
+                order_type="SELL",
+                trade_quantity=trade_quantity,
+                price=execution_price,
+                resting_order_complete=sell_filled >= sell_order["quantity"],
+            )
+
         # Emit WebSocket event
         if sio:
             await sio.emit('trade_executed', {
@@ -134,6 +151,9 @@ async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
 
 async def match_sell_order(db, market_id: ObjectId, sell_order: dict, sio) -> int:
     """Match a SELL order with existing BUY orders"""
+    market_doc = await db.markets.find_one({"_id": market_id})
+    market_title = (market_doc or {}).get("title", "Market")
+
     # Verify seller has the shares
     position = await db.positions.find_one({
         "user_id": sell_order["user_id"],
@@ -248,6 +268,19 @@ async def match_sell_order(db, market_id: ObjectId, sell_order: dict, sio) -> in
         total_filled += trade_quantity
         remaining_quantity -= trade_quantity
 
+        # Notify resting buyer their limit was hit
+        if buy_order["user_id"] != sell_order["user_id"]:
+            await notify_limit_order_matched(
+                db,
+                buy_order["user_id"],
+                market_title=market_title,
+                side=sell_order["side"],
+                order_type="BUY",
+                trade_quantity=trade_quantity,
+                price=execution_price,
+                resting_order_complete=buy_filled >= buy_order["quantity"],
+            )
+
         # Emit WebSocket event
         if sio:
             await sio.emit('trade_executed', {
@@ -331,6 +364,16 @@ async def get_orderbook_snapshot(market_id: ObjectId) -> OrderbookResponse:
         midpoint_yes=yes_midpoint,
         midpoint_no=no_midpoint
     )
+
+
+def orderbook_top_of_book(orderbook: OrderbookResponse) -> dict[str, Optional[float]]:
+    """Best bid (highest buy) and best ask (lowest sell) per outcome side."""
+    return {
+        "yes_best_bid": orderbook.YES.bids[0].price if orderbook.YES.bids else None,
+        "yes_best_ask": orderbook.YES.asks[0].price if orderbook.YES.asks else None,
+        "no_best_bid": orderbook.NO.bids[0].price if orderbook.NO.bids else None,
+        "no_best_ask": orderbook.NO.asks[0].price if orderbook.NO.asks else None,
+    }
 
 
 def calculate_midpoint(side: OrderbookSide) -> float:
