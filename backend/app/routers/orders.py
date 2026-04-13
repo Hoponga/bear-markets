@@ -428,11 +428,17 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
                     total_shares += minted
                     total_spent += minted * order_dict["price"]
 
-                # Cancel any remaining unfilled portion
-                await db.orders.update_one(
-                    {"_id": result.inserted_id},
-                    {"$set": {"status": "CANCELLED" if updated_order["filled_quantity"] == 0 else "PARTIAL"}}
-                )
+                    # Cancel any remaining unfilled portion
+                    await db.orders.update_one(
+                        {"_id": result.inserted_id},
+                        {"$set": {"status": "CANCELLED" if updated_order["filled_quantity"] == 0 else "PARTIAL"}}
+                    )
+                else:
+                    # Nothing minted, cancel the order
+                    await db.orders.update_one(
+                        {"_id": result.inserted_id},
+                        {"$set": {"status": "CANCELLED"}}
+                    )
 
     # Update orderbook snapshot
     if sio and total_shares > 0:
