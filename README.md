@@ -75,82 +75,86 @@ markets/
 ## Setup Instructions
 
 ### Prerequisites
+
 - **Python 3.9+**
 - **Node.js 18+**
-- **MongoDB** (local or cloud instance)
+- **MongoDB**
+  - macOS: `brew install mongodb-community`
+  - Linux: follow the [official MongoDB install guide](https://www.mongodb.com/docs/manual/installation/)
+  - Or use Docker: `docker run -d -p 27017:27017 --name mongodb mongo:latest`
+- **A Google OAuth app** — create one at [console.cloud.google.com](https://console.cloud.google.com). You'll need a Client ID and Client Secret. Add `http://localhost:3000` as an authorized origin and `http://localhost:3000` as a redirect URI.
 
-### Backend Setup
+### 1. Clone the repo
 
-1. Navigate to the backend directory:
+```bash
+git clone <repo-url>
+cd markets
+```
+
+### 2. Backend Setup
+
 ```bash
 cd backend
-```
-
-2. Create a virtual environment:
-```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Configure environment variables (edit `.env` file):
+Create a `backend/.env` file with the following (fill in your own values):
+
 ```env
 MONGODB_URL=mongodb://localhost:27017
 DATABASE_NAME=berkeley_markets
-JWT_SECRET=your-secret-key-change-in-production
+JWT_SECRET=<generate a long random string>
 JWT_ALGORITHM=HS256
 FRONTEND_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=<your Google OAuth client ID>
+GOOGLE_CLIENT_SECRET=<your Google OAuth client secret>
 ```
 
-5. Start MongoDB (if running locally):
+### 3. Frontend Setup
+
 ```bash
-# macOS (with Homebrew)
+cd ../frontend
+npm install
+```
+
+Create a `frontend/.env.local` file:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=http://localhost:8000
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=<your Google OAuth client ID>
+```
+
+### 4. Start MongoDB
+
+```bash
+# macOS
 brew services start mongodb-community
 
 # Linux
 sudo systemctl start mongod
-
-# Or use Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
 ```
 
-6. Run the FastAPI server:
+### 5. Run the servers
+
+Open two terminals:
+
 ```bash
+# Terminal 1 — backend
+cd backend
+source venv/bin/activate
 uvicorn app.main:socket_app --reload --host 0.0.0.0 --port 8000
-```
 
-The backend will be available at `http://localhost:8000`
-- API docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-```bash
+# Terminal 2 — frontend
 cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Configure environment variables (`.env.local` is already created):
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=http://localhost:8000
-```
-
-4. Run the development server:
-```bash
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000`
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
 
 ## Usage Guide
 
