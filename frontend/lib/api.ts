@@ -377,6 +377,14 @@ export const organizationsAPI = {
     return data;
   },
 
+  changeBet: async (orgId: string, betId: string, side: 'YES' | 'NO', amount?: number) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/change`, {
+      side,
+      amount,
+    });
+    return data;
+  },
+
   joinBet: async (orgId: string, betId: string, side: 'YES' | 'NO', amount?: number) => {
     const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/join`, {
       side,
@@ -409,6 +417,21 @@ export const organizationsAPI = {
 
   getBetEntries: async (orgId: string, betId: string) => {
     const { data } = await api.get(`/api/organizations/${orgId}/bets/${betId}/entries`);
+    return data;
+  },
+
+  getComments: async (orgId: string, betId: string) => {
+    const { data } = await api.get(`/api/organizations/${orgId}/bets/${betId}/comments`);
+    return data;
+  },
+
+  postComment: async (orgId: string, betId: string, text: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/comments`, { text });
+    return data;
+  },
+
+  toggleParticipants: async (orgId: string, betId: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/toggle-participants`);
     return data;
   },
 

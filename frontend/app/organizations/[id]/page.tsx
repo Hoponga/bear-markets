@@ -18,11 +18,10 @@ export default function OrganizationDetailPage() {
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'bets' | 'leaderboard' | 'admin'>('bets');
-  const [showCreateBet, setShowCreateBet] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Create bet form
+  // Create bet modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [betTitle, setBetTitle] = useState('');
   const [betDescription, setBetDescription] = useState('');
   const [betType, setBetType] = useState<'fixed' | 'variable'>('fixed');
@@ -30,20 +29,13 @@ export default function OrganizationDetailPage() {
   const [minFee, setMinFee] = useState(5);
   const [seedYes, setSeedYes] = useState(10);
   const [seedNo, setSeedNo] = useState(10);
-  const [error, setError] = useState('');
-
-  // Join bet state
-  const [joiningBetId, setJoiningBetId] = useState<string | null>(null);
-  const [joinSide, setJoinSide] = useState<'YES' | 'NO'>('YES');
-  const [joinAmount, setJoinAmount] = useState(10);
+  const [createError, setCreateError] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
 
   useEffect(() => {
     const user = authStorage.getUser();
-    if (!user) {
-      router.push('/');
-      return;
-    }
-    setCurrentUserId(user.id);
+    if (!user) { router.push('/'); return; }
+
     loadOrganization();
     loadBets();
     loadLeaderboard();
@@ -93,8 +85,8 @@ export default function OrganizationDetailPage() {
 
   const handleCreateBet = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
+    setCreateError('');
+    setCreateLoading(true);
     try {
       await organizationsAPI.createBet(orgId, betTitle, betDescription, betType, {
         fixedFee: betType === 'fixed' ? fixedFee : undefined,
@@ -102,66 +94,17 @@ export default function OrganizationDetailPage() {
         seedYes: betType === 'variable' ? seedYes : undefined,
         seedNo: betType === 'variable' ? seedNo : undefined,
       });
-      setShowCreateBet(false);
+      setShowCreateModal(false);
       setBetTitle('');
       setBetDescription('');
+      setBetType('fixed');
       await loadBets();
       await loadOrganization();
+      toast.success('Bet created!');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create bet');
-    }
-  };
-
-  const handleJoinBet = async (betId: string) => {
-    try {
-      const bet = bets.find(b => b.id === betId);
-      await organizationsAPI.joinBet(orgId, betId, joinSide, bet?.bet_type === 'variable' ? joinAmount : undefined);
-      setJoiningBetId(null);
-      await loadBets();
-      await loadOrganization();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to join bet');
-    }
-  };
-
-  const handleLockBet = async (betId: string) => {
-    try {
-      await organizationsAPI.lockBet(orgId, betId);
-      await loadBets();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to lock bet');
-    }
-  };
-
-  const handleUnlockBet = async (betId: string) => {
-    if (!confirm('Re-open this bet so members can join again?')) return;
-    try {
-      await organizationsAPI.unlockBet(orgId, betId);
-      await loadBets();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to unlock bet');
-    }
-  };
-
-  const handleResolveBet = async (betId: string, outcome: 'YES' | 'NO') => {
-    if (!confirm(`Resolve this bet as ${outcome}?`)) return;
-    try {
-      await organizationsAPI.resolveBet(orgId, betId, outcome);
-      await loadBets();
-      await loadOrganization();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to resolve bet');
-    }
-  };
-
-  const handleUndoBet = async (betId: string) => {
-    if (!confirm('Undo this resolution and refund everyone?')) return;
-    try {
-      await organizationsAPI.undoBet(orgId, betId);
-      await loadBets();
-      await loadOrganization();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to undo bet');
+      setCreateError(err.response?.data?.detail || 'Failed to create bet');
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -188,7 +131,7 @@ export default function OrganizationDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-text-muted" />
         </div>
       </div>
     );
@@ -214,22 +157,27 @@ export default function OrganizationDetailPage() {
       {/* Tabs */}
       <div className="border-b border-border-secondary mb-6">
         <div className="flex space-x-6">
-          <button
-            onClick={() => setActiveTab('bets')}
-            className={`pb-3 text-sm font-medium transition ${activeTab === 'bets' ? 'border-b-2 border-text-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
-          >
-            Bets
-          </button>
-          <button
-            onClick={() => setActiveTab('leaderboard')}
-            className={`pb-3 text-sm font-medium transition ${activeTab === 'leaderboard' ? 'border-b-2 border-text-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
-          >
-            Leaderboard
-          </button>
+          {(['bets', 'leaderboard'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 text-sm font-medium capitalize transition ${
+                activeTab === tab
+                  ? 'border-b-2 border-text-primary text-text-primary'
+                  : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
           {isAdmin && (
             <button
               onClick={() => setActiveTab('admin')}
-              className={`pb-3 text-sm font-medium transition ${activeTab === 'admin' ? 'border-b-2 border-text-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
+              className={`pb-3 text-sm font-medium transition ${
+                activeTab === 'admin'
+                  ? 'border-b-2 border-text-primary text-text-primary'
+                  : 'text-text-muted hover:text-text-secondary'
+              }`}
             >
               Admin
             </button>
@@ -240,148 +188,30 @@ export default function OrganizationDetailPage() {
       {/* Bets Tab */}
       {activeTab === 'bets' && (
         <div>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-medium text-text-primary">Pool Bets</h2>
             <button
-              onClick={() => setShowCreateBet(!showCreateBet)}
-              className="text-sm text-text-muted hover:text-text-primary"
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-btn-primary text-text-primary text-sm font-medium rounded-lg hover:bg-btn-primary-hover transition"
             >
-              {showCreateBet ? 'Cancel' : '+ Create Bet'}
+              + Create Bet
             </button>
           </div>
 
-          {/* Create Bet Form */}
-          {showCreateBet && (
-            <div className="bg-bg-card rounded-lg border border-border-primary p-4 mb-6">
-              <form onSubmit={handleCreateBet} className="space-y-3">
-                <input
-                  type="text"
-                  value={betTitle}
-                  onChange={(e) => setBetTitle(e.target.value)}
-                  placeholder="What are you betting on?"
-                  className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded text-sm"
-                  required
+          {bets.length === 0 ? (
+            <p className="text-text-muted text-center py-16">No bets yet. Create one to get started!</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bets.map((bet) => (
+                <BetCard
+                  key={bet.id}
+                  bet={bet}
+                  onClick={() => router.push(`/organizations/${orgId}/bets/${bet.id}`)}
                 />
-                <textarea
-                  value={betDescription}
-                  onChange={(e) => setBetDescription(e.target.value)}
-                  placeholder="Description / resolution criteria"
-                  className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded text-sm"
-                  rows={2}
-                />
-                <div className="flex space-x-4">
-                  <label className="flex items-center text-sm text-text-secondary">
-                    <input type="radio" checked={betType === 'fixed'} onChange={() => setBetType('fixed')} className="mr-2" />
-                    Fixed fee (everyone pays same)
-                  </label>
-                  <label className="flex items-center text-sm text-text-secondary">
-                    <input type="radio" checked={betType === 'variable'} onChange={() => setBetType('variable')} className="mr-2" />
-                    Variable (bet any amount)
-                  </label>
-                </div>
-                {betType === 'fixed' ? (
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">Entry fee</label>
-                    <input type="number" value={fixedFee} onChange={(e) => setFixedFee(Number(e.target.value))} min="1" className="w-32 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
-                  </div>
-                ) : (
-                  <div className="flex space-x-4">
-                    <div>
-                      <label className="block text-xs text-text-muted mb-1">Min bet</label>
-                      <input type="number" value={minFee} onChange={(e) => setMinFee(Number(e.target.value))} min="1" className="w-24 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-text-muted mb-1">Your seed (YES)</label>
-                      <input type="number" value={seedYes} onChange={(e) => setSeedYes(Number(e.target.value))} min="1" className="w-24 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-text-muted mb-1">Your seed (NO)</label>
-                      <input type="number" value={seedNo} onChange={(e) => setSeedNo(Number(e.target.value))} min="1" className="w-24 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
-                    </div>
-                  </div>
-                )}
-                {error && <p className="text-sm text-red-400">{error}</p>}
-                <button type="submit" className="px-4 py-2 bg-btn-primary text-text-primary text-sm rounded hover:bg-btn-primary-hover">
-                  Create Bet
-                </button>
-              </form>
+              ))}
             </div>
           )}
 
-          {/* Bets List */}
-          <div className="space-y-4">
-            {bets.length === 0 ? (
-              <p className="text-text-muted text-center py-8">No bets yet. Create one to get started!</p>
-            ) : (
-              bets.map((bet) => (
-                <div key={bet.id} className="bg-bg-card rounded-lg border border-border-primary p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-medium text-text-primary">{bet.title}</h3>
-                      {bet.description && <p className="text-sm text-text-muted">{bet.description}</p>}
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded ${bet.status === 'open' ? 'bg-green-900/30 text-green-400' : bet.status === 'locked' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-gray-700 text-gray-300'}`}>
-                      {bet.status.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <div className="flex space-x-6 text-sm mb-3">
-                    <span className="text-green-400">YES: {bet.yes_pool.toFixed(0)} ({bet.yes_count})</span>
-                    <span className="text-red-400">NO: {bet.no_pool.toFixed(0)} ({bet.no_count})</span>
-                    <span className="text-text-muted">{bet.bet_type === 'fixed' ? `${bet.fixed_fee} per entry` : `min ${bet.min_fee}`}</span>
-                  </div>
-
-                  {bet.resolved_outcome && (
-                    <p className="text-sm mb-3">Resolved: <span className={bet.resolved_outcome === 'YES' ? 'text-green-400' : 'text-red-400'}>{bet.resolved_outcome}</span></p>
-                  )}
-
-                  {bet.user_bet && (
-                    <p className="text-sm text-text-muted mb-3">You bet {bet.user_bet.amount} on {bet.user_bet.side}</p>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-2">
-                    {bet.status === 'open' && !bet.user_bet && (
-                      joiningBetId === bet.id ? (
-                        <div className="flex items-center space-x-2">
-                          <select value={joinSide} onChange={(e) => setJoinSide(e.target.value as 'YES' | 'NO')} className="px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm">
-                            <option value="YES">YES</option>
-                            <option value="NO">NO</option>
-                          </select>
-                          {bet.bet_type === 'variable' && (
-                            <input type="number" value={joinAmount} onChange={(e) => setJoinAmount(Number(e.target.value))} min={bet.min_fee} className="w-20 px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm" />
-                          )}
-                          <button onClick={() => handleJoinBet(bet.id)} className="px-3 py-1 bg-btn-primary text-text-primary text-sm rounded">Confirm</button>
-                          <button onClick={() => setJoiningBetId(null)} className="text-sm text-text-muted">Cancel</button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setJoiningBetId(bet.id)} className="px-3 py-1 bg-btn-primary text-text-primary text-sm rounded">Join Bet</button>
-                      )
-                    )}
-
-                    {bet.created_by === currentUserId && bet.status === 'open' && (
-                      <button onClick={() => handleLockBet(bet.id)} className="px-3 py-1 border border-border-secondary text-text-muted text-sm rounded hover:text-text-primary">Lock</button>
-                    )}
-
-                    {bet.created_by === currentUserId && bet.status === 'locked' && (
-                      <button onClick={() => handleUnlockBet(bet.id)} className="px-3 py-1 border border-yellow-700 text-yellow-400 text-sm rounded hover:bg-yellow-900/30">Unlock</button>
-                    )}
-
-                    {bet.created_by === currentUserId && (bet.status === 'open' || bet.status === 'locked') && (
-                      <>
-                        <button onClick={() => handleResolveBet(bet.id, 'YES')} className="px-3 py-1 border border-green-700 text-green-400 text-sm rounded hover:bg-green-900/30">Resolve YES</button>
-                        <button onClick={() => handleResolveBet(bet.id, 'NO')} className="px-3 py-1 border border-red-700 text-red-400 text-sm rounded hover:bg-red-900/30">Resolve NO</button>
-                      </>
-                    )}
-
-                    {isAdmin && bet.status === 'resolved' && (
-                      <button onClick={() => handleUndoBet(bet.id)} className="px-3 py-1 border border-border-secondary text-text-muted text-sm rounded hover:text-text-primary">Undo Resolution</button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       )}
 
@@ -450,6 +280,208 @@ export default function OrganizationDetailPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Create Bet Modal */}
+      {showCreateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}
+        >
+          <div className="bg-bg-card rounded-xl border border-border-primary w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center p-5 border-b border-border-secondary">
+              <h2 className="text-lg font-semibold text-text-primary">Create a Bet</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-text-muted hover:text-text-primary text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateBet} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Question</label>
+                <input
+                  type="text"
+                  value={betTitle}
+                  onChange={(e) => setBetTitle(e.target.value)}
+                  placeholder="What are you betting on?"
+                  className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm focus:ring-2 focus:ring-border-secondary"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Description <span className="text-text-disabled">(optional)</span></label>
+                <textarea
+                  value={betDescription}
+                  onChange={(e) => setBetDescription(e.target.value)}
+                  placeholder="Resolution criteria or context"
+                  className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-text-secondary mb-2">Bet type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBetType('fixed')}
+                    className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
+                      betType === 'fixed'
+                        ? 'bg-accent-purple text-text-primary'
+                        : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
+                    }`}
+                  >
+                    Fixed fee
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBetType('variable')}
+                    className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
+                      betType === 'variable'
+                        ? 'bg-accent-purple text-text-primary'
+                        : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
+                    }`}
+                  >
+                    Variable
+                  </button>
+                </div>
+                <p className="text-xs text-text-disabled mt-1">
+                  {betType === 'fixed' ? 'Everyone pays the same entry fee' : 'Participants choose their own bet amount'}
+                </p>
+              </div>
+
+              {betType === 'fixed' ? (
+                <div>
+                  <label className="block text-sm text-text-secondary mb-1">Entry fee (tokens)</label>
+                  <input
+                    type="number"
+                    value={fixedFee}
+                    onChange={(e) => setFixedFee(Number(e.target.value))}
+                    min="1"
+                    className="w-full px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-text-muted mb-1">Min bet</label>
+                    <input
+                      type="number"
+                      value={minFee}
+                      onChange={(e) => setMinFee(Number(e.target.value))}
+                      min="1"
+                      className="w-full px-2 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-text-muted mb-1">Seed YES</label>
+                    <input
+                      type="number"
+                      value={seedYes}
+                      onChange={(e) => setSeedYes(Number(e.target.value))}
+                      min="1"
+                      className="w-full px-2 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-text-muted mb-1">Seed NO</label>
+                    <input
+                      type="number"
+                      value={seedNo}
+                      onChange={(e) => setSeedNo(Number(e.target.value))}
+                      min="1"
+                      className="w-full px-2 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {createError && <p className="text-sm text-red-400">{createError}</p>}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="flex-1 py-2.5 bg-btn-primary text-text-primary font-medium rounded-lg hover:bg-btn-primary-hover disabled:opacity-50 transition"
+                >
+                  {createLoading ? 'Creating...' : 'Create Bet'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2.5 border border-border-secondary text-text-muted rounded-lg hover:text-text-primary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// MarketCard-style bet card
+function BetCard({ bet, onClick }: { bet: PoolBet; onClick: () => void }) {
+  const totalCount = bet.yes_count + bet.no_count;
+  const yesPct = totalCount > 0 ? (bet.yes_count / totalCount) * 100 : 50;
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-bg-card rounded-lg shadow hover:shadow-lg transition-all border border-border-primary hover:border-border-secondary p-5 cursor-pointer"
+    >
+      {/* Status */}
+      <div className="flex justify-between items-center mb-3">
+        <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+          bet.status === 'open'
+            ? 'bg-green-900/30 text-green-400'
+            : bet.status === 'locked'
+            ? 'bg-yellow-900/30 text-yellow-400'
+            : 'bg-gray-700 text-gray-300'
+        }`}>
+          {bet.status === 'open' ? '● Open' : bet.status === 'locked' ? '⬡ Locked' : `✓ ${bet.resolved_outcome}`}
+        </span>
+        <span className="text-xs text-text-disabled">
+          {bet.bet_type === 'fixed' ? `${bet.fixed_fee} tokens` : `min ${bet.min_fee}`}
+        </span>
+      </div>
+
+      {/* Title */}
+      <h3 className="text-base font-semibold text-text-primary mb-4 line-clamp-2">{bet.title}</h3>
+
+      {/* YES / NO distribution rows */}
+      <div className="space-y-2 mb-3">
+        {[
+          { label: 'YES', pct: yesPct, color: 'bg-green-500', text: 'text-green-400' },
+          { label: 'NO',  pct: 100 - yesPct, color: 'bg-red-500', text: 'text-red-400' },
+        ].map(({ label, pct, color, text }) => (
+          <div key={label} className="flex items-center gap-2">
+            <span className={`text-xs font-bold w-6 shrink-0 ${text}`}>{label}</span>
+            <div className="flex-1 h-2 bg-bg-hover rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${color}`}
+                style={{ width: totalCount > 0 ? `${pct}%` : '50%' }}
+              />
+            </div>
+            <span className={`text-xs font-medium w-8 text-right shrink-0 ${text}`}>
+              {totalCount > 0 ? `${Math.round(pct)}%` : '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {bet.user_bet && (
+        <p className="text-xs text-text-disabled mt-2">
+          You: <span className={bet.user_bet.side === 'YES' ? 'text-green-400' : 'text-red-400'}>{bet.user_bet.side}</span>
+          {' '}({bet.user_bet.amount} tokens)
+        </p>
       )}
     </div>
   );

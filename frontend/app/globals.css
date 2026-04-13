@@ -2,14 +2,106 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dark mode (default) ──────────────────────────────────────────────────── */
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-rgb: 17, 24, 39;
+  --bg-primary:        #111827;
+  --bg-card:           #1f2937;
+  --bg-hover:          #374151;
+  --bg-input:          #1f2937;
+  --border-primary:    #374151;
+  --border-secondary:  #4b5563;
+  --text-primary:      #d1d5db;
+  --text-secondary:    #9ca3af;
+  --text-muted:        #6b7280;
+  --text-disabled:     #4b5563;
+  --btn-primary:       #4b5563;
+  --btn-primary-hover: #6b7280;
+  --btn-secondary:     #374151;
+  --btn-secondary-hover: #4b5563;
+  --navbar-bg:         rgb(8, 12, 20);
+  --navbar-link:       #ffffff;
+  --navbar-link-dim:   rgba(255, 255, 255, 0.8);
+  --navbar-border:     rgba(255, 255, 255, 0.15);
+  --foreground: 255, 255, 255;
+  --background: 17, 24, 39;
+}
+
+/* System preference (only when no manual override is set) */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg-primary:        #f9fafb;
+    --bg-card:           #ffffff;
+    --bg-hover:          #f3f4f6;
+    --bg-input:          #ffffff;
+    --border-primary:    #e5e7eb;
+    --border-secondary:  #d1d5db;
+    --text-primary:      #111827;
+    --text-secondary:    #374151;
+    --text-muted:        #6b7280;
+    --text-disabled:     #9ca3af;
+    --btn-primary:       #e5e7eb;
+    --btn-primary-hover: #d1d5db;
+    --btn-secondary:     #f3f4f6;
+    --btn-secondary-hover: #e5e7eb;
+    --navbar-bg:         #ffffff;
+    --navbar-link:       #111827;
+    --navbar-link-dim:   rgba(17, 24, 39, 0.65);
+    --navbar-border:     rgba(0, 0, 0, 0.1);
+    --foreground: 17, 24, 39;
+    --background: 249, 250, 251;
+  }
+}
+
+/* Manual overrides — take priority over media query */
+[data-theme="light"] {
+  --bg-primary:        #f9fafb;
+  --bg-card:           #ffffff;
+  --bg-hover:          #f3f4f6;
+  --bg-input:          #ffffff;
+  --border-primary:    #e5e7eb;
+  --border-secondary:  #d1d5db;
+  --text-primary:      #111827;
+  --text-secondary:    #374151;
+  --text-muted:        #6b7280;
+  --text-disabled:     #9ca3af;
+  --btn-primary:       #e5e7eb;
+  --btn-primary-hover: #d1d5db;
+  --btn-secondary:     #f3f4f6;
+  --btn-secondary-hover: #e5e7eb;
+  --navbar-bg:         #ffffff;
+  --navbar-link:       #111827;
+  --navbar-link-dim:   rgba(17, 24, 39, 0.65);
+  --navbar-border:     rgba(0, 0, 0, 0.1);
+  --foreground: 17, 24, 39;
+  --background: 249, 250, 251;
+}
+
+[data-theme="dark"] {
+  --bg-primary:        #111827;
+  --bg-card:           #1f2937;
+  --bg-hover:          #374151;
+  --bg-input:          #1f2937;
+  --border-primary:    #374151;
+  --border-secondary:  #4b5563;
+  --text-primary:      #d1d5db;
+  --text-secondary:    #9ca3af;
+  --text-muted:        #6b7280;
+  --text-disabled:     #4b5563;
+  --btn-primary:       #4b5563;
+  --btn-primary-hover: #6b7280;
+  --btn-secondary:     #374151;
+  --btn-secondary-hover: #4b5563;
+  --navbar-bg:         rgb(8, 12, 20);
+  --navbar-link:       #ffffff;
+  --navbar-link-dim:   rgba(255, 255, 255, 0.8);
+  --navbar-border:     rgba(255, 255, 255, 0.15);
+  --foreground: 255, 255, 255;
+  --background: 17, 24, 39;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
 }
 
 @layer utilities {
@@ -18,21 +110,8 @@ body {
   }
 }
 
-/* Custom scrollbar for dark mode */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-hover); }
+::-webkit-scrollbar-thumb { background: var(--border-secondary); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

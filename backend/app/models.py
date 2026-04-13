@@ -292,6 +292,7 @@ class PoolBetResponse(BaseModel):
     created_by: str
     created_at: datetime
     user_bet: Optional[dict] = None  # Current user's bet if any
+    participants_public: bool = True  # Whether the participants list is visible to all
 
 
 class PoolBetJoin(BaseModel):
@@ -330,3 +331,16 @@ class NotificationsListResponse(BaseModel):
 class EditMemberBalanceRequest(BaseModel):
     user_id: str
     new_balance: float
+
+
+# Bet Comment Models
+class BetCommentCreate(BaseModel):
+    text: str
+
+class BetCommentResponse(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    user_side: Literal["YES", "NO"]
+    text: str
+    created_at: datetime

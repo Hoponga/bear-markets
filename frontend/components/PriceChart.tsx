@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+import { useOrderbookUpdates, socketManager } from '@/lib/socket';
+
 import { usePriceUpdates, socketManager } from '@/lib/socket';
 import { marketsAPI } from '@/lib/api';
-
 interface PriceChartProps {
   marketId: string;
 }
@@ -59,17 +61,21 @@ export default function PriceChart({ marketId }: PriceChartProps) {
     socketManager.connect();
     socketManager.subscribeMarket(marketId);
 
-    const unsubscribe = usePriceUpdates(marketId, (data) => {
-      // Update reference
-      latestPricesRef.current = { yes_price: data.yes_price, no_price: data.no_price };
-
-      const newPoint: PricePoint = {
-        timestamp: data.timestamp,
-        yes_price: data.yes_price,
-        no_price: data.no_price,
-      };
-
-      setPriceHistory((prev) => [...prev, newPoint]);
+    const unsubscribe = useOrderbookUpdates(marketId, (data) => {
+      const yesPrice = data.midpoint.YES;
+      const noPrice = data.midpoint.NO;
+      setPriceHistory((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.yes_price === yesPrice && last.no_price === noPrice) {
+          return prev; // no change, skip
+        }
+        const newPoint: PricePoint = {
+          timestamp: new Date().toISOString(),
+          yes_price: yesPrice,
+          no_price: noPrice,
+        };
+        return [...prev.slice(-50), newPoint];
+      });
     });
 
     return () => {
