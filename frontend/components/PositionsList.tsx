@@ -7,6 +7,17 @@ interface PositionsListProps {
   positions: Position[];
 }
 
+function sortPositions(positions: Position[]): Position[] {
+  return [...positions].sort((a, b) => {
+    const statusA = a.market_status ?? 'active';
+    const statusB = b.market_status ?? 'active';
+    if (statusA !== statusB) {
+      return statusA === 'active' ? -1 : 1;
+    }
+    return a.market_title.localeCompare(b.market_title);
+  });
+}
+
 export default function PositionsList({ positions }: PositionsListProps) {
   if (positions.length === 0) {
     return (
@@ -22,6 +33,8 @@ export default function PositionsList({ positions }: PositionsListProps) {
     );
   }
 
+  const rows = sortPositions(positions);
+
   return (
     <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
       <table className="min-w-full divide-y divide-border-primary">
@@ -29,6 +42,9 @@ export default function PositionsList({ positions }: PositionsListProps) {
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
               Market
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+              Resolution
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
               YES Shares
@@ -45,7 +61,7 @@ export default function PositionsList({ positions }: PositionsListProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-border-primary">
-          {positions.map((position) => (
+          {rows.map((position) => (
             <tr key={position.market_id} className="hover:bg-bg-hover">
               <td className="px-6 py-4 whitespace-nowrap">
                 <Link
@@ -54,6 +70,25 @@ export default function PositionsList({ positions }: PositionsListProps) {
                 >
                   {position.market_title}
                 </Link>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                {(position.market_status ?? 'active') === 'resolved' ? (
+                  position.resolved_outcome ? (
+                    <span
+                      className={
+                        position.resolved_outcome === 'YES'
+                          ? 'font-medium text-green-400'
+                          : 'font-medium text-red-400'
+                      }
+                    >
+                      {position.resolved_outcome}
+                    </span>
+                  ) : (
+                    <span className="text-text-muted">Resolved</span>
+                  )
+                ) : (
+                  <span className="text-text-disabled">Open</span>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {position.yes_shares > 0 ? (

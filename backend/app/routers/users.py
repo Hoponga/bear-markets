@@ -217,7 +217,9 @@ async def get_portfolio(current_user: dict = Depends(get_current_user)):
                 yes_shares=pos["yes_shares"],
                 no_shares=pos["no_shares"],
                 avg_yes_price=pos["avg_yes_price"],
-                avg_no_price=pos["avg_no_price"]
+                avg_no_price=pos["avg_no_price"],
+                market_status=market.get("status", "active"),
+                resolved_outcome=market.get("resolved_outcome"),
             ))
 
     # Get open orders

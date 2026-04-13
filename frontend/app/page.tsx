@@ -7,7 +7,8 @@ import MarketCard from '@/components/MarketCard';
 import type { Market } from '@/types';
 
 export default function HomePage() {
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const [activeMarkets, setActiveMarkets] = useState<Market[]>([]);
+  const [resolvedMarkets, setResolvedMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,8 +18,12 @@ export default function HomePage() {
 
   const loadMarkets = async () => {
     try {
-      const data = await marketsAPI.list('active');
-      setMarkets(data);
+      const [active, resolved] = await Promise.all([
+        marketsAPI.list('active'),
+        marketsAPI.list('resolved'),
+      ]);
+      setActiveMarkets(active);
+      setResolvedMarkets(resolved);
     } catch (err: any) {
       setError('Failed to load markets');
       console.error(err);
@@ -59,19 +64,36 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Markets Grid */}
+      {/* Markets: active first, resolved at bottom */}
       {!loading && !error && (
         <>
-          {markets.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {markets.map((market) => (
-                <MarketCard key={market.id} market={market} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
-              <p className="text-text-muted text-lg">No active markets yet.</p>
-              <p className="text-text-disabled mt-2">Check back soon!</p>
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">Active markets</h2>
+            {activeMarkets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeMarkets.map((market) => (
+                  <MarketCard key={market.id} market={market} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
+                <p className="text-text-muted text-lg">No active markets yet.</p>
+                <p className="text-text-disabled mt-2">Check back soon!</p>
+              </div>
+            )}
+          </div>
+
+          {resolvedMarkets.length > 0 && (
+            <div className="border-t border-border-secondary pt-10">
+              <h2 className="text-lg font-semibold text-text-primary mb-2">Resolved markets</h2>
+              <p className="text-sm text-text-muted mb-4">
+                Past outcomes—click a market to see details.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-95">
+                {resolvedMarkets.map((market) => (
+                  <MarketCard key={market.id} market={market} />
+                ))}
+              </div>
             </div>
           )}
         </>

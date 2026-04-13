@@ -127,6 +127,8 @@ class PositionResponse(BaseModel):
     no_shares: int
     avg_yes_price: float
     avg_no_price: float
+    market_status: Literal["active", "resolved"] = "active"
+    resolved_outcome: Optional[Literal["YES", "NO"]] = None
 
 
 # Portfolio Models
