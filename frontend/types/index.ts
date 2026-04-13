@@ -181,6 +181,7 @@ export interface PoolBet {
     side: 'YES' | 'NO';
     amount: number;
   };
+  participants_public: boolean;
 }
 
 export interface PoolBetEntry {
@@ -189,6 +190,15 @@ export interface PoolBetEntry {
   side: 'YES' | 'NO';
   amount: number;
   placed_at: string;
+}
+
+export interface BetComment {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_side: 'YES' | 'NO';
+  text: string;
+  created_at: string;
 }
 
 // Notification Types

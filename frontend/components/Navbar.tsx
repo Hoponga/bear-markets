@@ -120,20 +120,39 @@ export default function Navbar() {
     setShowAuthModal(false);
   };
 
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+
+  useEffect(() => {
+    // Read saved preference; null means "follow system"
+    const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    setTheme(saved);
+  }, []);
+
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    // Determine current effective theme
+    const currentIsDark = theme === 'dark' ||
+      (theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const next = currentIsDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    setTheme(next);
+  };
+
   if (!isClient) {
     return null; // Avoid hydration mismatch
   }
 
   return (
     <>
-      <nav className="bg-[rgb(8,12,20)] sticky top-0 z-40">
+      <nav className="bg-navbar-bg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           <div className="flex justify-between items-center h-12">
             {/* Left - Logo */}
             <Link href="/" className="flex items-center space-x-2">
               <Image src="/logo.png" alt="Bearmarket" width={48} height={48} />
-              <span className="text-sm font-medium text-white uppercase tracking-widest">
+              <span className="text-sm font-medium text-navbar-link uppercase tracking-widest">
                 Bearmarket
               </span>
             </Link>
@@ -144,19 +163,19 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/"
-                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
                   >
                     Markets
                   </Link>
                   <Link
                     href="/organizations"
-                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
                   >
                     Organizations
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
                   >
                     Leaderboard
                   </Link>
@@ -164,7 +183,7 @@ export default function Navbar() {
                   <div className="relative" ref={notifRef}>
                     <button
                       onClick={toggleNotifications}
-                      className="text-white/80 hover:text-white transition relative"
+                      className="text-navbar-dim hover:text-navbar-link transition relative"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -206,10 +225,10 @@ export default function Navbar() {
                     )}
                   </div>
 
-                  <div className="border-l border-white/20 pl-5 relative" ref={dropdownRef}>
+                  <div className="border-l border-navbar-border pl-5 relative" ref={dropdownRef}>
                     <button
                       onClick={toggleUserDropdown}
-                      className="text-xs text-white/80 hover:text-white transition"
+                      className="text-xs text-navbar-dim hover:text-navbar-link transition"
                     >
                       {user.name} · {user.token_balance.toFixed(2)} tokens
                     </button>
@@ -262,20 +281,42 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/leaderboard"
-                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
                   >
                     Leaderboard
                   </Link>
-                  <div className="border-l border-white/20 pl-5">
+                  <div className="border-l border-navbar-border pl-5">
                     <button
                       onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-1.5 text-xs text-white/80 hover:text-white uppercase tracking-wide border border-white/30 rounded transition"
+                      className="px-4 py-1.5 text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide border border-navbar-border rounded transition"
                     >
                       Sign In
                     </button>
                   </div>
                 </>
               )}
+
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="text-navbar-dim hover:text-navbar-link transition"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ||
+                 (theme === null && typeof window !== 'undefined' && !window.matchMedia('(prefers-color-scheme: dark)').matches)
+                  ? (
+                    /* Moon — click to go dark */
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  ) : (
+                    /* Sun — click to go light */
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                    </svg>
+                  )
+                }
+              </button>
             </div>
           </div>
         </div>

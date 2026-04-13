@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useTradeUpdates, socketManager } from '@/lib/socket';
+import { useOrderbookUpdates, socketManager } from '@/lib/socket';
 
 interface PriceChartProps {
   marketId: string;
@@ -23,14 +23,21 @@ export default function PriceChart({ marketId }: PriceChartProps) {
     socketManager.connect();
     socketManager.subscribeMarket(marketId);
 
-    const unsubscribe = useTradeUpdates(marketId, (trade) => {
-      const newPoint: PricePoint = {
-        timestamp: trade.timestamp,
-        yes_price: trade.side === 'YES' ? trade.price : priceHistory[priceHistory.length - 1]?.yes_price || 0.5,
-        no_price: trade.side === 'NO' ? trade.price : priceHistory[priceHistory.length - 1]?.no_price || 0.5,
-      };
-
-      setPriceHistory((prev) => [...prev.slice(-50), newPoint]); // Keep last 50 points
+    const unsubscribe = useOrderbookUpdates(marketId, (data) => {
+      const yesPrice = data.midpoint.YES;
+      const noPrice = data.midpoint.NO;
+      setPriceHistory((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.yes_price === yesPrice && last.no_price === noPrice) {
+          return prev; // no change, skip
+        }
+        const newPoint: PricePoint = {
+          timestamp: new Date().toISOString(),
+          yes_price: yesPrice,
+          no_price: noPrice,
+        };
+        return [...prev.slice(-50), newPoint];
+      });
     });
 
     return () => {

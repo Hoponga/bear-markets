@@ -23,6 +23,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Apply saved theme before first paint to prevent flash */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var t = localStorage.getItem('theme');
+              if (t === 'light' || t === 'dark') {
+                document.documentElement.setAttribute('data-theme', t);
+              }
+            } catch(e) {}
+          })();
+        `}} />
+      </head>
       <body className={poppins.className}>
         <Navbar />
         <main className="min-h-screen bg-bg-primary flex flex-col">

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from app.models import (
     PoolBetCreate, PoolBetResponse, PoolBetJoin, PoolBetEntryResponse,
-    PoolBetResolve, NotificationResponse
+    PoolBetResolve, NotificationResponse, BetCommentCreate, BetCommentResponse
 )
 from app.auth import get_current_user
 from app.database import get_database
@@ -98,7 +98,8 @@ async def create_pool_bet(
         "yes_count": 0,
         "no_count": 0,
         "created_by": current_user["_id"],
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "participants_public": True,
     }
 
     result = await db.pool_bets.insert_one(bet_dict)
@@ -118,7 +119,8 @@ async def create_pool_bet(
         yes_count=0,
         no_count=0,
         created_by=str(current_user["_id"]),
-        created_at=bet_dict["created_at"]
+        created_at=bet_dict["created_at"],
+        participants_public=True,
     )
 
 
@@ -159,7 +161,8 @@ async def list_pool_bets(
             no_count=bet["no_count"],
             created_by=str(bet["created_by"]),
             created_at=bet["created_at"],
-            user_bet={"side": user_entry["side"], "amount": user_entry["amount"]} if user_entry else None
+            user_bet={"side": user_entry["side"], "amount": user_entry["amount"]} if user_entry else None,
+            participants_public=bet.get("participants_public", True),
         ))
 
     return bets
@@ -207,8 +210,42 @@ async def get_pool_bet(
         no_count=bet["no_count"],
         created_by=str(bet["created_by"]),
         created_at=bet["created_at"],
-        user_bet={"side": user_entry["side"], "amount": user_entry["amount"]} if user_entry else None
+        user_bet={"side": user_entry["side"], "amount": user_entry["amount"]} if user_entry else None,
+        participants_public=bet.get("participants_public", True),
     )
+
+
+@router.post("/{org_id}/bets/{bet_id}/toggle-participants")
+async def toggle_participants_visibility(
+    org_id: str,
+    bet_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle whether participants are publicly visible (creator only)"""
+    db = await get_database()
+    await verify_org_member(db, org_id, current_user["_id"])
+
+    if not ObjectId.is_valid(bet_id):
+        raise HTTPException(status_code=400, detail="Invalid bet ID")
+
+    bet = await db.pool_bets.find_one({
+        "_id": ObjectId(bet_id),
+        "organization_id": ObjectId(org_id)
+    })
+
+    if not bet:
+        raise HTTPException(status_code=404, detail="Bet not found")
+
+    if bet["created_by"] != current_user["_id"]:
+        raise HTTPException(status_code=403, detail="Only the creator can change this setting")
+
+    new_value = not bet.get("participants_public", True)
+    await db.pool_bets.update_one(
+        {"_id": ObjectId(bet_id)},
+        {"$set": {"participants_public": new_value}}
+    )
+
+    return {"participants_public": new_value}
 
 
 @router.post("/{org_id}/bets/{bet_id}/join")
@@ -283,6 +320,88 @@ async def join_pool_bet(
     )
 
     return {"message": f"Successfully bet {amount} tokens on {join_data.side}"}
+
+
+@router.post("/{org_id}/bets/{bet_id}/change")
+async def change_pool_bet(
+    org_id: str,
+    bet_id: str,
+    join_data: PoolBetJoin,
+    current_user: dict = Depends(get_current_user)
+):
+    """Change an existing bet entry (only while bet is open)"""
+    db = await get_database()
+    member = await verify_org_member(db, org_id, current_user["_id"])
+
+    if not ObjectId.is_valid(bet_id):
+        raise HTTPException(status_code=400, detail="Invalid bet ID")
+
+    bet = await db.pool_bets.find_one({
+        "_id": ObjectId(bet_id),
+        "organization_id": ObjectId(org_id)
+    })
+    if not bet:
+        raise HTTPException(status_code=404, detail="Bet not found")
+    if bet["status"] != "open":
+        raise HTTPException(status_code=400, detail="Bet is locked — changes are no longer allowed")
+
+    existing = await db.pool_bet_entries.find_one({
+        "bet_id": ObjectId(bet_id),
+        "user_id": current_user["_id"]
+    })
+    if not existing:
+        raise HTTPException(status_code=404, detail="You have not placed a bet yet")
+
+    # Determine new amount
+    if bet["bet_type"] == "fixed":
+        new_amount = bet["fixed_fee"]
+    else:
+        if not join_data.amount:
+            raise HTTPException(status_code=400, detail="Amount required for variable bets")
+        if join_data.amount < bet["min_fee"]:
+            raise HTTPException(status_code=400, detail=f"Minimum bet is {bet['min_fee']} tokens")
+        new_amount = join_data.amount
+
+    old_amount = existing["amount"]
+    old_side = existing["side"]
+    new_side = join_data.side
+
+    # Check balance for the difference (if paying more)
+    token_diff = new_amount - old_amount
+    if token_diff > member["token_balance"]:
+        raise HTTPException(status_code=400, detail="Insufficient tokens")
+
+    # Adjust member balance
+    await db.organization_members.update_one(
+        {"organization_id": ObjectId(org_id), "user_id": current_user["_id"]},
+        {"$inc": {"token_balance": -token_diff}}
+    )
+
+    # Update pool counts: remove old side, add new side
+    old_pool = "yes_pool" if old_side == "YES" else "no_pool"
+    old_count = "yes_count" if old_side == "YES" else "no_count"
+    new_pool = "yes_pool" if new_side == "YES" else "no_pool"
+    new_count = "yes_count" if new_side == "YES" else "no_count"
+
+    if old_side == new_side:
+        # Same side, just adjust pool amount
+        await db.pool_bets.update_one(
+            {"_id": ObjectId(bet_id)},
+            {"$inc": {new_pool: token_diff}}
+        )
+    else:
+        await db.pool_bets.update_one(
+            {"_id": ObjectId(bet_id)},
+            {"$inc": {old_pool: -old_amount, old_count: -1, new_pool: new_amount, new_count: 1}}
+        )
+
+    # Update entry
+    await db.pool_bet_entries.update_one(
+        {"bet_id": ObjectId(bet_id), "user_id": current_user["_id"]},
+        {"$set": {"side": new_side, "amount": new_amount, "placed_at": datetime.utcnow()}}
+    )
+
+    return {"message": f"Bet updated to {new_amount} tokens on {new_side}"}
 
 
 @router.post("/{org_id}/bets/{bet_id}/lock")
@@ -502,6 +621,84 @@ async def undo_bet_resolution(
     )
 
     return {"message": "Resolution undone. All bets refunded."}
+
+
+@router.get("/{org_id}/bets/{bet_id}/comments", response_model=List[BetCommentResponse])
+async def get_bet_comments(
+    org_id: str,
+    bet_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get comments for a bet (visible to all org members)"""
+    db = await get_database()
+    await verify_org_member(db, org_id, current_user["_id"])
+
+    if not ObjectId.is_valid(bet_id):
+        raise HTTPException(status_code=400, detail="Invalid bet ID")
+
+    comments_cursor = db.bet_comments.find(
+        {"bet_id": ObjectId(bet_id)}
+    ).sort("created_at", 1)
+
+    comments = []
+    async for c in comments_cursor:
+        comments.append(BetCommentResponse(
+            id=str(c["_id"]),
+            user_id=str(c["user_id"]),
+            user_name=c["user_name"],
+            user_side=c["user_side"],
+            text=c["text"],
+            created_at=c["created_at"]
+        ))
+    return comments
+
+
+@router.post("/{org_id}/bets/{bet_id}/comments", response_model=BetCommentResponse)
+async def post_bet_comment(
+    org_id: str,
+    bet_id: str,
+    comment_data: BetCommentCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Post a comment on a bet (requires having placed a bet)"""
+    db = await get_database()
+    await verify_org_member(db, org_id, current_user["_id"])
+
+    if not ObjectId.is_valid(bet_id):
+        raise HTTPException(status_code=400, detail="Invalid bet ID")
+
+    entry = await db.pool_bet_entries.find_one({
+        "bet_id": ObjectId(bet_id),
+        "user_id": current_user["_id"]
+    })
+    if not entry:
+        raise HTTPException(
+            status_code=403,
+            detail="You must place a bet before commenting"
+        )
+
+    text = comment_data.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Comment cannot be empty")
+
+    comment = {
+        "bet_id": ObjectId(bet_id),
+        "user_id": current_user["_id"],
+        "user_name": current_user["name"],
+        "user_side": entry["side"],
+        "text": text,
+        "created_at": datetime.utcnow()
+    }
+    result = await db.bet_comments.insert_one(comment)
+
+    return BetCommentResponse(
+        id=str(result.inserted_id),
+        user_id=str(current_user["_id"]),
+        user_name=current_user["name"],
+        user_side=entry["side"],
+        text=text,
+        created_at=comment["created_at"]
+    )
 
 
 @router.post("/{org_id}/members/{user_id}/balance")
