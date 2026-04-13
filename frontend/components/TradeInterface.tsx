@@ -12,7 +12,7 @@ interface TradeInterfaceProps {
 export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfaceProps) {
   const [side, setSide] = useState<'YES' | 'NO'>('YES');
   const [orderType, setOrderType] = useState<'BUY' | 'SELL'>('BUY');
-  const [executionType, setExecutionType] = useState<'MARKET' | 'LIMIT'>('MARKET');
+  const [executionType, setExecutionType] = useState<'MARKET' | 'LIMIT'>('LIMIT');
   const [price, setPrice] = useState('0.50');
   const [quantity, setQuantity] = useState('10');
   const [tokenAmount, setTokenAmount] = useState('10');
@@ -83,17 +83,6 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setExecutionType('MARKET')}
-              className={`py-2 px-4 rounded-lg font-medium transition ${
-                executionType === 'MARKET'
-                  ? 'bg-accent-purple text-text-primary'
-                  : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
-              }`}
-            >
-              Market
-            </button>
-            <button
-              type="button"
               onClick={() => setExecutionType('LIMIT')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 executionType === 'LIMIT'
@@ -102,6 +91,17 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               }`}
             >
               Limit
+            </button>
+            <button
+              type="button"
+              onClick={() => setExecutionType('MARKET')}
+              className={`py-2 px-4 rounded-lg font-medium transition ${
+                executionType === 'MARKET'
+                  ? 'bg-accent-purple text-text-primary'
+                  : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
+              }`}
+            >
+              Market
             </button>
           </div>
           <p className="text-xs text-text-disabled mt-1">
@@ -149,7 +149,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setOrderType('BUY')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 orderType === 'BUY'
-                  ? 'bg-btn-primary text-text-primary'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >

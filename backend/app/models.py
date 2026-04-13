@@ -206,6 +206,9 @@ class MarketIdeaResponse(BaseModel):
     description: str
     status: Literal["pending", "approved", "rejected"]
     created_at: datetime
+    like_count: int = 0
+    dislike_count: int = 0
+    user_vote: Optional[Literal["like", "dislike"]] = None  # Current user's vote
 
 
 class MarketIdeasListResponse(BaseModel):
@@ -214,6 +217,10 @@ class MarketIdeasListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class MarketIdeaVote(BaseModel):
+    vote: Literal["like", "dislike"]
 
 
 # Organization Models

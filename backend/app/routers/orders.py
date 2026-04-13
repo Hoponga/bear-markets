@@ -422,17 +422,22 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
                 # Try share minting
                 minted, _ = await attempt_share_minting(db, market_id, order_dict, sio)
 
+                # Get updated order
+                updated_order = await db.orders.find_one({"_id": result.inserted_id})
+
                 if minted > 0:
-                    # Get updated order
-                    updated_order = await db.orders.find_one({"_id": result.inserted_id})
                     total_shares += minted
                     total_spent += minted * order_dict["price"]
 
                 # Cancel any remaining unfilled portion
-                await db.orders.update_one(
-                    {"_id": result.inserted_id},
-                    {"$set": {"status": "CANCELLED" if updated_order["filled_quantity"] == 0 else "PARTIAL"}}
-                )
+                if updated_order:
+                    new_status = "FILLED" if updated_order["filled_quantity"] >= updated_order["quantity"] else (
+                        "PARTIAL" if updated_order["filled_quantity"] > 0 else "CANCELLED"
+                    )
+                    await db.orders.update_one(
+                        {"_id": result.inserted_id},
+                        {"$set": {"status": new_status}}
+                    )
 
     # Update orderbook snapshot
     if sio and total_shares > 0:

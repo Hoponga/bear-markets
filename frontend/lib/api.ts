@@ -253,6 +253,30 @@ export const marketIdeasAPI = {
     const { data } = await api.post('/api/auth/market-ideas', { title, description });
     return data;
   },
+
+  listPublic: async (page: number = 1, pageSize: number = 20, statusFilter?: string): Promise<MarketIdeasResponse> => {
+    const { data } = await api.get('/api/auth/market-ideas/public', {
+      params: { page, page_size: pageSize, status_filter: statusFilter },
+    });
+    return data;
+  },
+
+  listPublicAuth: async (page: number = 1, pageSize: number = 20, statusFilter?: string): Promise<MarketIdeasResponse> => {
+    const { data } = await api.get('/api/auth/market-ideas/public/auth', {
+      params: { page, page_size: pageSize, status_filter: statusFilter },
+    });
+    return data;
+  },
+
+  vote: async (ideaId: string, vote: 'like' | 'dislike'): Promise<{ message: string; like_count: number; dislike_count: number; user_vote: string }> => {
+    const { data } = await api.post(`/api/auth/market-ideas/${ideaId}/vote`, { vote });
+    return data;
+  },
+
+  removeVote: async (ideaId: string): Promise<{ message: string; like_count: number; dislike_count: number; user_vote: null }> => {
+    const { data } = await api.delete(`/api/auth/market-ideas/${ideaId}/vote`);
+    return data;
+  },
 };
 
 export default api;
