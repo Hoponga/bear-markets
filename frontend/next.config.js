@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -17,7 +15,7 @@ const nextConfig = {
     return [
       {
         source: '/api/proxy/:path*',
-        destination: `${backendUrl}/:path*`,
+        destination: 'http://backend.railway.internal:8000/:path*',
       },
     ];
   },
