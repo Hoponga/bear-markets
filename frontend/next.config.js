@@ -8,6 +8,14 @@ const nextConfig = {
     };
     return config;
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/proxy/:path*',
+        destination: 'http://backend.railway.internal:8000/:path*',
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig
