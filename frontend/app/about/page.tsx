@@ -9,7 +9,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 space-y-6 text-text-secondary text-lg leading-relaxed">
+        <div className="bg-bg-card rounded-lg border border-border-primary p-8 space-y-6 text-text-secondary text-lg leading-relaxed">
           <p>
             Bear Markets is a prediction market for the number one public university in the world. This is just a side project we thought would be fun to build.
           </p>

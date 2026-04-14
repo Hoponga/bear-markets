@@ -14,7 +14,7 @@ export default function MarketCard({ market }: MarketCardProps) {
 
   return (
     <Link href={`/market/${market.id}`}>
-      <div className="bg-bg-card rounded-lg shadow-lg hover:shadow-xl transition-shadow border border-border-primary p-6 cursor-pointer hover:border-border-secondary overflow-visible">
+      <div className="bg-bg-card rounded-lg transition border border-border-primary p-6 cursor-pointer hover:border-border-secondary overflow-visible">
         {/* Title */}
         <h3 className="text-lg font-semibold text-text-primary mb-3 line-clamp-2">
           {market.title}

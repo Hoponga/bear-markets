@@ -115,7 +115,7 @@ export default function OrganizationsPage() {
 
       {!user ? (
         <>
-          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center max-w-lg">
+          <div className="bg-bg-card rounded-lg border border-border-primary p-8 text-center max-w-lg">
             <h2 className="text-xl font-medium text-text-primary mb-2">Sign in to get started</h2>
             <p className="text-text-muted mb-6">
               Create your own organization or join one with an invite link.
@@ -155,7 +155,7 @@ export default function OrganizationsPage() {
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
+        <div className="bg-bg-card rounded-lg border border-border-primary p-6 mb-8">
           <h2 className="text-2xl font-medium text-text-primary mb-4">Create Organization</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
@@ -227,7 +227,7 @@ export default function OrganizationsPage() {
 
       {/* Join Form */}
       {showJoinForm && (
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 mb-8">
+        <div className="bg-bg-card rounded-lg border border-border-primary p-6 mb-8">
           <h2 className="text-2xl font-medium text-text-primary mb-4">Join Organization</h2>
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
@@ -281,7 +281,7 @@ export default function OrganizationsPage() {
               <Link
                 key={org.id}
                 href={`/organizations/${org.id}`}
-                className="block bg-bg-card rounded-lg shadow-lg border border-border-primary p-6 hover:shadow-xl hover:border-border-secondary transition"
+                className="block bg-bg-card rounded-lg border border-border-primary p-6 hover:border-border-secondary transition"
               >
                 <h3 className="text-xl font-medium text-text-primary mb-2">{org.name}</h3>
                 <p className="text-sm text-text-muted mb-4 line-clamp-2">
@@ -295,7 +295,7 @@ export default function OrganizationsPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+          <div className="bg-bg-card rounded-lg border border-border-primary p-8 text-center">
             <p className="text-text-muted mb-4">
               You haven't created or joined any organizations yet.
             </p>

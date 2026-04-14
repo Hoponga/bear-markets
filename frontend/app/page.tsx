@@ -73,7 +73,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
+              <div className="text-center py-12 bg-bg-card rounded-lg border border-border-primary">
                 <p className="text-text-muted text-lg">No active markets yet.</p>
                 <p className="text-text-disabled mt-2">Check back soon!</p>
               </div>

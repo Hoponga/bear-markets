@@ -77,7 +77,7 @@ export default function LeaderboardPage() {
 
       {/* Leaderboard Table */}
       {entries.length > 0 ? (
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
+        <div className="bg-bg-card rounded-lg border border-border-primary overflow-hidden">
           <table className="min-w-full divide-y divide-border-primary">
             <thead className="bg-bg-hover">
               <tr>
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
           )}
         </div>
       ) : (
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+        <div className="bg-bg-card rounded-lg border border-border-primary p-8 text-center">
           <p className="text-text-muted">No users found.</p>
         </div>
       )}
