@@ -14,10 +14,9 @@ import type {
   MarketOrderResponse
 } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = '/api/proxy';
 
-console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
-console.log('available env vars', process.env);
+console.log('API URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
