@@ -91,6 +91,16 @@ export const authAPI = {
     const { data } = await api.post('/api/auth/google', { credential });
     return data;
   },
+
+  updateProfile: async (name: string): Promise<User> => {
+    const { data } = await api.put('/api/auth/me', { name });
+    return data;
+  },
+
+  deleteAccount: async (): Promise<{ message: string }> => {
+    const { data } = await api.delete('/api/auth/me');
+    return data;
+  },
 };
 
 // Markets endpoints
@@ -439,6 +449,16 @@ export const organizationsAPI = {
 
   editMemberBalance: async (orgId: string, userId: string, newBalance: number) => {
     const { data } = await api.post(`/api/organizations/${orgId}/members/${userId}/balance?new_balance=${newBalance}`);
+    return data;
+  },
+
+  updateMyNickname: async (orgId: string, nickname: string | null): Promise<{ message: string; nickname: string | null }> => {
+    const { data } = await api.put(`/api/organizations/${orgId}/nickname`, { nickname });
+    return data;
+  },
+
+  updateMemberNickname: async (orgId: string, userId: string, nickname: string | null): Promise<{ message: string; nickname: string | null }> => {
+    const { data } = await api.put(`/api/organizations/${orgId}/members/${userId}/nickname`, { nickname });
     return data;
   },
 };

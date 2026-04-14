@@ -36,6 +36,8 @@ export interface Organization {
   invite_code: string;
   initial_token_balance: number;
   user_token_balance: number;
+  user_nickname?: string | null;
+  user_is_admin: boolean;
 }
 
 export interface OrganizationMember {
@@ -45,6 +47,7 @@ export interface OrganizationMember {
   token_balance: number;
   joined_at: string;
   is_admin: boolean;
+  nickname?: string | null;
 }
 
 export interface Order {

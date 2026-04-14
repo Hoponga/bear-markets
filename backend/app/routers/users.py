@@ -13,7 +13,7 @@ from app.models import (
     UserCreate, UserLogin, UserResponse, PortfolioResponse, PositionResponse,
     OrderResponse, LeaderboardEntry, LeaderboardResponse, UserListEntry,
     UserListResponse, MakeAdminRequest, MarketIdeaCreate, MarketIdeaResponse,
-    MarketIdeasListResponse, MarketIdeaVote
+    MarketIdeasListResponse, MarketIdeaVote, UpdateProfileRequest
 )
 from typing import Optional
 from app.auth import get_password_hash, verify_password, create_access_token, get_current_user, get_current_admin, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -196,6 +196,67 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         token_balance=current_user["token_balance"],
         is_admin=current_user.get("is_admin", False)
     )
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_profile(
+    profile_data: UpdateProfileRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update current user's profile (name)"""
+    db = await get_database()
+
+    if not profile_data.name or len(profile_data.name.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Name cannot be empty"
+        )
+
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"name": profile_data.name.strip()}}
+    )
+
+    return UserResponse(
+        id=str(current_user["_id"]),
+        email=current_user["email"],
+        name=profile_data.name.strip(),
+        token_balance=current_user["token_balance"],
+        is_admin=current_user.get("is_admin", False)
+    )
+
+
+@router.delete("/me")
+async def delete_account(current_user: dict = Depends(get_current_user)):
+    """Delete current user's account and all associated data"""
+    db = await get_database()
+    user_id = current_user["_id"]
+
+    # Delete user's positions
+    await db.positions.delete_many({"user_id": user_id})
+
+    # Cancel and delete user's open orders
+    await db.orders.delete_many({"user_id": user_id})
+
+    # Remove user from organization memberships
+    await db.organization_members.delete_many({"user_id": user_id})
+
+    # Delete user's notifications
+    await db.notifications.delete_many({"user_id": user_id})
+
+    # Delete user's market ideas
+    await db.market_ideas.delete_many({"user_id": user_id})
+
+    # Delete pool bet entries
+    await db.pool_bet_entries.delete_many({"user_id": user_id})
+
+    # Delete bet comments
+    await db.bet_comments.delete_many({"user_id": user_id})
+
+    # Finally, delete the user
+    await db.users.delete_one({"_id": user_id})
+
+    return {"message": "Account deleted successfully"}
 
 
 @router.get("/portfolio", response_model=PortfolioResponse)

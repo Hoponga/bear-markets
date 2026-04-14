@@ -199,6 +199,15 @@ class MakeAdminRequest(BaseModel):
     email: str
 
 
+# Profile Management Models
+class UpdateProfileRequest(BaseModel):
+    name: str
+
+
+class UpdateNicknameRequest(BaseModel):
+    nickname: Optional[str] = None  # None to clear nickname
+
+
 # Market Ideas Models
 class MarketIdeaCreate(BaseModel):
     title: str
@@ -246,6 +255,8 @@ class OrganizationResponse(BaseModel):
     invite_code: str
     initial_token_balance: int
     user_token_balance: float  # Current user's token balance in this org
+    user_nickname: Optional[str] = None  # Current user's nickname in this org
+    user_is_admin: bool = False  # Whether current user is admin of this org
 
 class OrganizationMemberResponse(BaseModel):
     user_id: str
@@ -254,6 +265,7 @@ class OrganizationMemberResponse(BaseModel):
     token_balance: float
     joined_at: datetime
     is_admin: bool
+    nickname: Optional[str] = None  # Organization-specific nickname
 
 class InviteUserRequest(BaseModel):
     email: EmailStr

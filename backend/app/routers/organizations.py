@@ -7,7 +7,7 @@ import secrets
 from app.models import (
     OrganizationCreate, OrganizationResponse, OrganizationMemberResponse,
     InviteUserRequest, OrganizationLeaderboardResponse, LeaderboardEntry,
-    MarketCreate, MarketResponse
+    MarketCreate, MarketResponse, UpdateNicknameRequest
 )
 from app.auth import get_current_user
 from app.database import get_database
@@ -59,7 +59,9 @@ async def create_organization(
         member_count=1,
         invite_code=invite_code,
         initial_token_balance=org_data.initial_token_balance,
-        user_token_balance=org_data.initial_token_balance
+        user_token_balance=org_data.initial_token_balance,
+        user_nickname=None,
+        user_is_admin=True
     )
 
 
@@ -83,6 +85,8 @@ async def list_my_organizations(current_user: dict = Depends(get_current_user)):
     async for org in orgs_cursor:
         membership = memberships.get(org["_id"])
         user_token_balance = membership["token_balance"] if membership else org["initial_token_balance"]
+        user_nickname = membership.get("nickname") if membership else None
+        user_is_admin = membership.get("is_admin", False) if membership else False
 
         organizations.append(OrganizationResponse(
             id=str(org["_id"]),
@@ -93,7 +97,9 @@ async def list_my_organizations(current_user: dict = Depends(get_current_user)):
             member_count=org["member_count"],
             invite_code=org["invite_code"],
             initial_token_balance=org["initial_token_balance"],
-            user_token_balance=user_token_balance
+            user_token_balance=user_token_balance,
+            user_nickname=user_nickname,
+            user_is_admin=user_is_admin
         ))
 
     return organizations
@@ -131,7 +137,9 @@ async def get_organization(
         member_count=org["member_count"],
         invite_code=org["invite_code"],
         initial_token_balance=org["initial_token_balance"],
-        user_token_balance=member["token_balance"]
+        user_token_balance=member["token_balance"],
+        user_nickname=member.get("nickname"),
+        user_is_admin=member.get("is_admin", False)
     )
 
 
@@ -191,7 +199,9 @@ async def join_organization(
         member_count=org["member_count"],
         invite_code=org["invite_code"],
         initial_token_balance=org["initial_token_balance"],
-        user_token_balance=org["initial_token_balance"]
+        user_token_balance=org["initial_token_balance"],
+        user_nickname=None,
+        user_is_admin=False
     )
 
 
@@ -227,7 +237,8 @@ async def get_organization_members(
                 user_email=user["email"],
                 token_balance=mem["token_balance"],
                 joined_at=mem["joined_at"],
-                is_admin=mem["is_admin"]
+                is_admin=mem["is_admin"],
+                nickname=mem.get("nickname")
             ))
 
     return members
@@ -407,3 +418,74 @@ async def get_organization_markets(
         ))
 
     return markets
+
+
+@router.put("/{org_id}/nickname")
+async def update_my_nickname(
+    org_id: str,
+    nickname_data: UpdateNicknameRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update current user's nickname in an organization"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(org_id):
+        raise HTTPException(status_code=400, detail="Invalid organization ID")
+
+    # Verify user is a member
+    member = await db.organization_members.find_one({
+        "organization_id": ObjectId(org_id),
+        "user_id": current_user["_id"]
+    })
+    if not member:
+        raise HTTPException(status_code=403, detail="Not a member of this organization")
+
+    # Update nickname (None to clear it)
+    nickname = nickname_data.nickname.strip() if nickname_data.nickname else None
+    await db.organization_members.update_one(
+        {"organization_id": ObjectId(org_id), "user_id": current_user["_id"]},
+        {"$set": {"nickname": nickname}}
+    )
+
+    return {"message": "Nickname updated", "nickname": nickname}
+
+
+@router.put("/{org_id}/members/{user_id}/nickname")
+async def update_member_nickname(
+    org_id: str,
+    user_id: str,
+    nickname_data: UpdateNicknameRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a member's nickname (admin only)"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(org_id):
+        raise HTTPException(status_code=400, detail="Invalid organization ID")
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    # Verify current user is an admin of the organization
+    admin_member = await db.organization_members.find_one({
+        "organization_id": ObjectId(org_id),
+        "user_id": current_user["_id"]
+    })
+    if not admin_member or not admin_member.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Only organization admins can edit member nicknames")
+
+    # Verify target user is a member
+    target_member = await db.organization_members.find_one({
+        "organization_id": ObjectId(org_id),
+        "user_id": ObjectId(user_id)
+    })
+    if not target_member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    # Update nickname (None to clear it)
+    nickname = nickname_data.nickname.strip() if nickname_data.nickname else None
+    await db.organization_members.update_one(
+        {"organization_id": ObjectId(org_id), "user_id": ObjectId(user_id)},
+        {"$set": {"nickname": nickname}}
+    )
+
+    return {"message": "Nickname updated", "nickname": nickname}

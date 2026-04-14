@@ -18,7 +18,11 @@ export default function OrganizationDetailPage() {
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'bets' | 'leaderboard' | 'admin'>('bets');
-  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Nickname editing
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [newNickname, setNewNickname] = useState('');
+  const [savingNickname, setSavingNickname] = useState(false);
 
   // Create bet modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -75,9 +79,6 @@ export default function OrganizationDetailPage() {
     try {
       const data = await organizationsAPI.getMembers(orgId);
       setMembers(data);
-      const user = authStorage.getUser();
-      const currentMember = data.find((m: OrganizationMember) => m.user_id === user?.id);
-      setIsAdmin(currentMember?.is_admin || false);
     } catch (err) {
       console.error('Failed to load members', err);
     }
@@ -120,6 +121,34 @@ export default function OrganizationDetailPage() {
     }
   };
 
+  const handleUpdateNickname = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingNickname(true);
+    try {
+      const nickname = newNickname.trim() || null;
+      await organizationsAPI.updateMyNickname(orgId, nickname);
+      setOrganization(prev => prev ? { ...prev, user_nickname: nickname } : prev);
+      setEditingNickname(false);
+      toast.success('Nickname updated!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to update nickname');
+    } finally {
+      setSavingNickname(false);
+    }
+  };
+
+  const handleEditMemberNickname = async (userId: string, currentNickname: string | null | undefined) => {
+    const newNick = prompt('Enter nickname (leave empty to clear):', currentNickname || '');
+    if (newNick === null) return;
+    try {
+      await organizationsAPI.updateMemberNickname(orgId, userId, newNick.trim() || null);
+      await loadMembers();
+      toast.success('Nickname updated!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to update nickname');
+    }
+  };
+
   const copyInviteLink = () => {
     if (!organization) return;
     const link = `${window.location.origin}/organizations/join?org=${orgId}&code=${organization.invite_code}`;
@@ -148,9 +177,73 @@ export default function OrganizationDetailPage() {
           </button>
         </div>
         <p className="text-text-muted mb-3">{organization.description}</p>
+
+        {/* User info with nickname */}
+        <div className="bg-bg-hover rounded-lg p-3 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <span className="text-xs text-text-disabled uppercase tracking-wide">Your Nickname</span>
+                {editingNickname ? (
+                  <form onSubmit={handleUpdateNickname} className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={newNickname}
+                      onChange={(e) => setNewNickname(e.target.value)}
+                      placeholder="Enter nickname"
+                      className="px-2 py-1 bg-bg-input border border-border-secondary text-text-primary rounded text-sm w-32"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={savingNickname}
+                      className="px-2 py-1 bg-btn-primary text-text-primary text-xs rounded hover:bg-btn-primary-hover disabled:opacity-50"
+                    >
+                      {savingNickname ? '...' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingNickname(false);
+                        setNewNickname(organization.user_nickname || '');
+                      }}
+                      className="px-2 py-1 text-text-muted text-xs hover:text-text-primary"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-text-primary text-sm">
+                      {organization.user_nickname || <span className="text-text-disabled italic">Not set</span>}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setNewNickname(organization.user_nickname || '');
+                        setEditingNickname(true);
+                      }}
+                      className="text-xs text-text-muted hover:text-text-primary"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="border-l border-border-secondary pl-4">
+                <span className="text-xs text-text-disabled uppercase tracking-wide">Balance</span>
+                <p className="text-text-primary font-medium">{organization.user_token_balance.toFixed(0)} tokens</p>
+              </div>
+            </div>
+            {organization.user_is_admin && (
+              <span className="px-2 py-1 bg-accent-purple/20 text-accent-purple text-xs font-medium rounded">
+                Admin
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="flex space-x-4 text-sm text-text-disabled">
           <span>{organization.member_count} members</span>
-          <span className="text-text-primary font-medium">{organization.user_token_balance.toFixed(0)} tokens</span>
         </div>
       </div>
 
@@ -170,7 +263,7 @@ export default function OrganizationDetailPage() {
               {tab}
             </button>
           ))}
-          {isAdmin && (
+          {organization?.user_is_admin && (
             <button
               onClick={() => setActiveTab('admin')}
               className={`pb-3 text-sm font-medium transition ${
@@ -247,7 +340,7 @@ export default function OrganizationDetailPage() {
       )}
 
       {/* Admin Tab */}
-      {activeTab === 'admin' && isAdmin && (
+      {activeTab === 'admin' && organization?.user_is_admin && (
         <div>
           <h2 className="text-lg font-medium text-text-primary mb-4">Manage Members</h2>
           <div className="bg-bg-card rounded-lg border border-border-primary overflow-hidden">
@@ -255,6 +348,7 @@ export default function OrganizationDetailPage() {
               <thead className="bg-bg-hover">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs text-text-disabled">Name</th>
+                  <th className="px-4 py-2 text-left text-xs text-text-disabled">Nickname</th>
                   <th className="px-4 py-2 text-left text-xs text-text-disabled">Email</th>
                   <th className="px-4 py-2 text-left text-xs text-text-disabled">Balance</th>
                   <th className="px-4 py-2 text-left text-xs text-text-disabled">Actions</th>
@@ -263,16 +357,34 @@ export default function OrganizationDetailPage() {
               <tbody>
                 {members.map((member) => (
                   <tr key={member.user_id} className="border-t border-border-secondary">
-                    <td className="px-4 py-2 text-text-primary">{member.user_name}</td>
+                    <td className="px-4 py-2 text-text-primary">
+                      {member.user_name}
+                      {member.is_admin && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-accent-purple/20 text-accent-purple text-xs rounded">
+                          Admin
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-text-secondary text-sm">
+                      {member.nickname || <span className="text-text-disabled italic">-</span>}
+                    </td>
                     <td className="px-4 py-2 text-text-muted text-sm">{member.user_email}</td>
                     <td className="px-4 py-2 text-text-primary">{member.token_balance.toFixed(0)}</td>
                     <td className="px-4 py-2">
-                      <button
-                        onClick={() => handleEditBalance(member.user_id, member.token_balance)}
-                        className="text-sm text-text-muted hover:text-text-primary"
-                      >
-                        Edit Balance
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleEditMemberNickname(member.user_id, member.nickname)}
+                          className="text-sm text-text-muted hover:text-text-primary"
+                        >
+                          Edit Nickname
+                        </button>
+                        <button
+                          onClick={() => handleEditBalance(member.user_id, member.token_balance)}
+                          className="text-sm text-text-muted hover:text-text-primary"
+                        >
+                          Edit Balance
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

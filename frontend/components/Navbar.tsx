@@ -247,6 +247,13 @@ export default function Navbar() {
                           >
                             Portfolio
                           </Link>
+                          <Link
+                            href="/profile"
+                            className="block px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary transition"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            Profile Settings
+                          </Link>
                         </div>
 
                         {organizations.length > 0 && (
