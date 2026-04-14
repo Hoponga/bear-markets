@@ -58,8 +58,8 @@ export default function LeaderboardPage() {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6">
-          <p className="text-red-400">{error}</p>
+        <div className="bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg p-4">
+          <p className="text-[var(--error-text)]">{error}</p>
         </div>
       </div>
     );
@@ -77,7 +77,7 @@ export default function LeaderboardPage() {
 
       {/* Leaderboard Table */}
       {entries.length > 0 ? (
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
+        <div className="bg-bg-card rounded-lg border border-border-primary overflow-hidden">
           <table className="min-w-full divide-y divide-border-primary">
             <thead className="bg-bg-hover">
               <tr>
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
           )}
         </div>
       ) : (
-        <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+        <div className="bg-bg-card rounded-lg border border-border-primary p-8 text-center">
           <p className="text-text-muted">No users found.</p>
         </div>
       )}

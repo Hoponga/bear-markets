@@ -10,7 +10,7 @@
   --bg-input:          #1f2937;
   --border-primary:    #374151;
   --border-secondary:  #4b5563;
-  --text-primary:      #d1d5db;
+  --text-primary:      #000000;
   --text-secondary:    #9ca3af;
   --text-muted:        #6b7280;
   --text-disabled:     #4b5563;
@@ -18,6 +18,9 @@
   --btn-primary-hover: #6b7280;
   --btn-secondary:     #374151;
   --btn-secondary-hover: #4b5563;
+  --error-bg:          rgba(127, 29, 29, 0.35);
+  --error-border:      #991b1b;
+  --error-text:        #fca5a5;
   --navbar-bg:         rgb(8, 12, 20);
   --navbar-link:       #ffffff;
   --navbar-link-dim:   rgba(255, 255, 255, 0.8);
@@ -29,13 +32,13 @@
 /* System preference (only when no manual override is set) */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg-primary:        #f9fafb;
+    --bg-primary:        #ffffff;
     --bg-card:           #ffffff;
     --bg-hover:          #f3f4f6;
     --bg-input:          #ffffff;
     --border-primary:    #e5e7eb;
     --border-secondary:  #d1d5db;
-    --text-primary:      #111827;
+    --text-primary:      #000000;
     --text-secondary:    #374151;
     --text-muted:        #6b7280;
     --text-disabled:     #9ca3af;
@@ -43,6 +46,9 @@
     --btn-primary-hover: #d1d5db;
     --btn-secondary:     #f3f4f6;
     --btn-secondary-hover: #e5e7eb;
+    --error-bg:          #fef2f2;
+    --error-border:      #fca5a5;
+    --error-text:        #b91c1c;
     --navbar-bg:         #ffffff;
     --navbar-link:       #111827;
     --navbar-link-dim:   rgba(17, 24, 39, 0.65);
@@ -54,13 +60,13 @@
 
 /* Manual overrides — take priority over media query */
 [data-theme="light"] {
-  --bg-primary:        #f9fafb;
+  --bg-primary:        #ffffff;
   --bg-card:           #ffffff;
   --bg-hover:          #f3f4f6;
   --bg-input:          #ffffff;
   --border-primary:    #e5e7eb;
   --border-secondary:  #d1d5db;
-  --text-primary:      #111827;
+  --text-primary:      #000000;
   --text-secondary:    #374151;
   --text-muted:        #6b7280;
   --text-disabled:     #9ca3af;
@@ -68,12 +74,15 @@
   --btn-primary-hover: #d1d5db;
   --btn-secondary:     #f3f4f6;
   --btn-secondary-hover: #e5e7eb;
+  --error-bg:          #fef2f2;
+  --error-border:      #fca5a5;
+  --error-text:        #b91c1c;
   --navbar-bg:         #ffffff;
   --navbar-link:       #111827;
   --navbar-link-dim:   rgba(17, 24, 39, 0.65);
   --navbar-border:     rgba(0, 0, 0, 0.1);
   --foreground: 17, 24, 39;
-  --background: 249, 250, 251;
+  --background: 255, 255, 255;
 }
 
 [data-theme="dark"] {
@@ -83,7 +92,7 @@
   --bg-input:          #1f2937;
   --border-primary:    #374151;
   --border-secondary:  #4b5563;
-  --text-primary:      #d1d5db;
+  --text-primary:      #000000;
   --text-secondary:    #9ca3af;
   --text-muted:        #6b7280;
   --text-disabled:     #4b5563;
@@ -91,6 +100,9 @@
   --btn-primary-hover: #6b7280;
   --btn-secondary:     #374151;
   --btn-secondary-hover: #4b5563;
+  --error-bg:          rgba(127, 29, 29, 0.35);
+  --error-border:      #991b1b;
+  --error-text:        #fca5a5;
   --navbar-bg:         rgb(8, 12, 20);
   --navbar-link:       #ffffff;
   --navbar-link-dim:   rgba(255, 255, 255, 0.8);

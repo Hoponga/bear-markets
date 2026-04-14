@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
-const poppins = Poppins({
+const inter = Inter({
   weight: ['300', '400', '500', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
@@ -36,7 +36,7 @@ export default function RootLayout({
           })();
         `}} />
       </head>
-      <body className={poppins.className}>
+      <body className={inter.className}>
         <Navbar />
         <main className="min-h-screen bg-bg-primary flex flex-col">
           <div className="flex-1">{children}</div>

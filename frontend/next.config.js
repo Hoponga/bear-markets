@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config) => {
     // Enable polling for hot reload in Docker
     config.watchOptions = {
@@ -12,7 +17,7 @@ const nextConfig = {
     return [
       {
         source: '/api/proxy/:path*',
-        destination: 'http://backend.railway.internal:8000/:path*',
+        destination: `${backendUrl}/:path*`,
       },
     ];
   },

@@ -35,17 +35,14 @@ export default function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Introduction */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text-primary mb-3">What is Bearmarket?</h1>
-        <p className="text-text-secondary mb-3">
+      <div className="pt-16 mb-8">
+        <h1 className="text-6xl font-bold tracking-tight text-[rgb(var(--foreground))] mb-6">Bet on what happens next at Berkeley</h1>
+        <p className="text-lg text-text-secondary mb-16">
           Bearmarket is a free prediction market platform made for Berkeley where you can trade on the outcomes of future events.
         </p>
-        <p className="text-text-muted text-sm mb-3">
-          Buy <span className="text-green-400 font-medium">YES</span> shares if you think something will happen, or <span className="text-red-400 font-medium">NO</span> if you don't. Prices reflect the crowd's probability—if YES trades at 70¢, the market thinks there's a 70% chance. When the event resolves, winning shares pay $1 each. You can also sell shares you own.
-        </p>
-        <p className="text-text-muted text-sm">
-          Want private markets with friends or your club? Check out <Link href="/organizations" className="text-text-secondary hover:text-text-primary underline">Organizations</Link>.{' '}
-          <Link href="/about" className="text-text-secondary hover:text-text-primary underline">Learn more</Link> about how it works, or <Link href="/suggest" className="text-text-secondary hover:text-text-primary underline">suggest a market</Link>.
+        <p className="text-2xl text-[rgb(var(--foreground))] font-semibold mb-2">How it works</p>
+        <p className="text-text-secondary text-lg mb-3">
+          Buy <span className="text-text-secondary font-medium">YES</span> shares if you think something will happen, or <span className="text-text-secondary font-medium">NO</span> if you don't. Prices reflect the crowd's probability—if YES trades at 70¢, the market thinks there's a 70% chance. When the event resolves, winning shares pay $1 each. You can also sell shares you own.
         </p>
       </div>
 
@@ -59,8 +56,8 @@ export default function HomePage() {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4">
-          <p className="text-red-400">{error}</p>
+        <div className="bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg p-4">
+          <p className="text-[var(--error-text)]">{error}</p>
         </div>
       )}
 
@@ -76,7 +73,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 bg-bg-card rounded-lg shadow-lg border border-border-primary">
+              <div className="text-center py-12 bg-bg-card rounded-lg border border-border-primary">
                 <p className="text-text-muted text-lg">No active markets yet.</p>
                 <p className="text-text-disabled mt-2">Check back soon!</p>
               </div>
