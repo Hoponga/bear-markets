@@ -147,8 +147,7 @@ export default function Navbar() {
     <>
       <nav className="bg-navbar-bg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="flex justify-between items-center h-12">
+          <div className="flex justify-between items-center py-3">
             {/* Left - Logo */}
             <Link href="/" className="flex items-center space-x-2">
               <Image src="/logo.png" alt="Bearmarket" width={48} height={48} />
@@ -163,21 +162,27 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/"
-                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                   >
                     Markets
                   </Link>
                   <Link
                     href="/organizations"
-                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                   >
                     Organizations
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                   >
                     Leaderboard
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
+                  >
+                    About
                   </Link>
                   {/* Notifications */}
                   <div className="relative" ref={notifRef}>
@@ -228,7 +233,7 @@ export default function Navbar() {
                   <div className="border-l border-navbar-border pl-5 relative" ref={dropdownRef}>
                     <button
                       onClick={toggleUserDropdown}
-                      className="text-xs text-navbar-dim hover:text-navbar-link transition"
+                      className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                     >
                       {user.name} · {user.token_balance.toFixed(2)} tokens
                     </button>
@@ -281,26 +286,32 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/"
-                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                   >
                     Markets
                   </Link>
                   <Link
                     href="/organizations"
-                    className="text-xs text-white/80 hover:text-white uppercase tracking-wide transition"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                   >
                     Organizations
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide transition"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                   >
                     Leaderboard
                   </Link>
-                  <div className="border-l border-navbar-border pl-5">
+                  <Link
+                    href="/about"
+                    className="text-sm text-text-muted hover:text-text-primary font-medium transition"
+                  >
+                    About
+                  </Link>
+                  <div className="pl-5">
                     <button
                       onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-1.5 text-xs text-navbar-dim hover:text-navbar-link uppercase tracking-wide border border-navbar-border rounded transition"
+                      className="px-4 py-1.5 text-sm text-text-muted hover:text-text-primary font-medium border border-border-primary rounded transition"
                     >
                       Sign In
                     </button>

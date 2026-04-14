@@ -58,8 +58,8 @@ export default function LeaderboardPage() {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6">
-          <p className="text-red-400">{error}</p>
+        <div className="bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg p-4">
+          <p className="text-[var(--error-text)]">{error}</p>
         </div>
       </div>
     );
