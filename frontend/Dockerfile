@@ -1,19 +1,19 @@
 FROM node:18-alpine
-
 WORKDIR /app
-
 # Install dependencies
 COPY package*.json ./
 RUN npm ci
-
 # Copy application
 COPY . .
-
-# Build
+# Build with env vars
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 RUN npm run build
-
 # Expose port
 EXPOSE 3000
-
 # Run
 CMD ["npm", "start"]
