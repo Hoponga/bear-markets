@@ -7,6 +7,7 @@ import { authStorage } from '@/lib/auth';
 import OrderBook from '@/components/OrderBook';
 import TradeInterface from '@/components/TradeInterface';
 import PriceChart from '@/components/PriceChart';
+import OrderBookTooltip from '@/components/OrderBookTooltip';
 import type { Market, User } from '@/types';
 
 export default function MarketDetailPage() {
@@ -79,16 +80,20 @@ export default function MarketDetailPage() {
           <h1 className="text-3xl font-bold text-text-primary mb-4">{market.title}</h1>
           <p className="text-text-muted mb-6">{market.description}</p>
 
-          {/* Current Prices - Keep green/red */}
-          <div className="grid grid-cols-2 gap-6 max-w-md mb-6">
-            <div className="bg-green-900/30 rounded-lg p-4 border-2 border-green-700/50">
-              <p className="text-sm text-green-400 font-medium mb-1">YES</p>
-              <p className="text-4xl font-bold text-green-400">{yesPrice}¢</p>
-            </div>
-            <div className="bg-red-900/30 rounded-lg p-4 border-2 border-red-700/50">
-              <p className="text-sm text-red-400 font-medium mb-1">NO</p>
-              <p className="text-4xl font-bold text-red-400">{noPrice}¢</p>
-            </div>
+          {/* Current Prices — hover YES/NO for bid/ask */}
+          <div className="grid grid-cols-2 gap-6 max-w-md mb-6 overflow-visible">
+            <OrderBookTooltip market={market} side="YES" keyboardFocus>
+              <div className="bg-green-900/30 rounded-lg p-4 border-2 border-green-700/50">
+                <p className="text-sm text-green-400 font-medium mb-1">YES</p>
+                <p className="text-4xl font-bold text-green-400">{yesPrice}¢</p>
+              </div>
+            </OrderBookTooltip>
+            <OrderBookTooltip market={market} side="NO" keyboardFocus>
+              <div className="bg-red-900/30 rounded-lg p-4 border-2 border-red-700/50">
+                <p className="text-sm text-red-400 font-medium mb-1">NO</p>
+                <p className="text-4xl font-bold text-red-400">{noPrice}¢</p>
+              </div>
+            </OrderBookTooltip>
           </div>
 
           {/* Market Info */}

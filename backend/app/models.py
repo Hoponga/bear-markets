@@ -56,6 +56,11 @@ class MarketResponse(BaseModel):
     current_no_price: float
     total_volume: float
     organization_id: Optional[str] = None  # If part of an organization
+    # Top of book (active markets only): best bid = highest buy, best ask = lowest sell
+    yes_best_bid: Optional[float] = None
+    yes_best_ask: Optional[float] = None
+    no_best_bid: Optional[float] = None
+    no_best_ask: Optional[float] = None
 
 class MarketResolve(BaseModel):
     outcome: Literal["YES", "NO"]

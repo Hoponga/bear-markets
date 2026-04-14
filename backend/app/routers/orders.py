@@ -8,6 +8,7 @@ from app.auth import get_current_user
 from app.database import get_database
 from app.services.orderbook import match_orders, get_orderbook_snapshot, update_market_price
 from app.services.share_minting import attempt_share_minting
+from app.services.user_notifications import notify_limit_order_matched
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -279,6 +280,8 @@ async def create_market_order(
 
 async def execute_market_buy(db, market_id, user_id, side, token_budget, current_user):
     """Execute a market buy order, spending up to token_budget"""
+    market_doc = await db.markets.find_one({"_id": market_id})
+    market_title = (market_doc or {}).get("title", "Market")
 
     # Verify user has enough tokens
     if current_user["token_balance"] < token_budget:
@@ -388,6 +391,18 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
                 'timestamp': datetime.utcnow().isoformat()
             })
 
+        if sell_order["user_id"] != user_id:
+            await notify_limit_order_matched(
+                db,
+                sell_order["user_id"],
+                market_title=market_title,
+                side=side,
+                order_type="SELL",
+                trade_quantity=shares_to_buy,
+                price=price,
+                resting_order_complete=new_filled >= sell_order["quantity"],
+            )
+
     # If we haven't spent all budget and there are no more sells, try share minting
     if remaining_budget > 0 and total_shares == 0:
         # Try to mint at market price (midpoint)
@@ -475,6 +490,8 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
 
 async def execute_market_sell(db, market_id, user_id, side, shares_to_sell, current_user):
     """Execute a market sell order, selling up to shares_to_sell shares"""
+    market_doc = await db.markets.find_one({"_id": market_id})
+    market_title = (market_doc or {}).get("title", "Market")
 
     # Verify user has enough shares
     position = await db.positions.find_one({
@@ -597,6 +614,18 @@ async def execute_market_sell(db, market_id, user_id, side, shares_to_sell, curr
                 'quantity': shares_to_trade,
                 'timestamp': datetime.utcnow().isoformat()
             })
+
+        if buy_order["user_id"] != user_id:
+            await notify_limit_order_matched(
+                db,
+                buy_order["user_id"],
+                market_title=market_title,
+                side=side,
+                order_type="BUY",
+                trade_quantity=shares_to_trade,
+                price=price,
+                resting_order_complete=new_filled >= buy_order["quantity"],
+            )
 
     # Update orderbook snapshot
     if sio and total_shares_sold > 0:

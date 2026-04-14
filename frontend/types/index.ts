@@ -19,6 +19,11 @@ export interface Market {
   total_volume: number;
   organization_id?: string;
   invite_code?: string;
+  /** Highest buy (best bid) / lowest sell (best ask) per side; from order book */
+  yes_best_bid?: number | null;
+  yes_best_ask?: number | null;
+  no_best_bid?: number | null;
+  no_best_ask?: number | null;
 }
 
 export interface Organization {

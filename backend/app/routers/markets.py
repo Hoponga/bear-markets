@@ -6,6 +6,7 @@ from datetime import datetime
 from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookResponse
 from app.auth import get_current_user, get_current_admin
 from app.database import get_database
+from app.services.market_quotes import best_quotes_for_market
 
 router = APIRouter(prefix="/api/markets", tags=["markets"])
 
@@ -25,6 +26,7 @@ async def list_markets(status_filter: str = "active"):
     markets = []
 
     async for market in markets_cursor:
+        yb, ya, nb, na = await best_quotes_for_market(market["_id"], market["status"])
         markets.append(MarketResponse(
             id=str(market["_id"]),
             title=market["title"],
@@ -36,7 +38,11 @@ async def list_markets(status_filter: str = "active"):
             current_yes_price=market.get("current_yes_price", 0.5),
             current_no_price=market.get("current_no_price", 0.5),
             total_volume=market.get("total_volume", 0.0),
-            organization_id=str(market["organization_id"]) if market.get("organization_id") else None
+            organization_id=str(market["organization_id"]) if market.get("organization_id") else None,
+            yes_best_bid=yb,
+            yes_best_ask=ya,
+            no_best_bid=nb,
+            no_best_ask=na,
         ))
 
     return markets
@@ -55,6 +61,7 @@ async def get_market(market_id: str):
     if not market:
         raise HTTPException(status_code=404, detail="Market not found")
 
+    yb, ya, nb, na = await best_quotes_for_market(market["_id"], market["status"])
     return MarketResponse(
         id=str(market["_id"]),
         title=market["title"],
@@ -66,7 +73,11 @@ async def get_market(market_id: str):
         current_yes_price=market.get("current_yes_price", 0.5),
         current_no_price=market.get("current_no_price", 0.5),
         total_volume=market.get("total_volume", 0.0),
-        organization_id=str(market["organization_id"]) if market.get("organization_id") else None
+        organization_id=str(market["organization_id"]) if market.get("organization_id") else None,
+        yes_best_bid=yb,
+        yes_best_ask=ya,
+        no_best_bid=nb,
+        no_best_ask=na,
     )
 
 
@@ -176,7 +187,11 @@ async def create_market(
         resolved_outcome=None,
         current_yes_price=0.5,
         current_no_price=0.5,
-        total_volume=0.0
+        total_volume=0.0,
+        yes_best_bid=None,
+        yes_best_ask=None,
+        no_best_bid=None,
+        no_best_ask=None,
     )
 
 

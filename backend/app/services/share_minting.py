@@ -2,6 +2,8 @@ from bson import ObjectId
 from datetime import datetime
 from typing import Optional, Tuple
 
+from app.services.user_notifications import notify_limit_order_matched
+
 
 async def attempt_share_minting(
     db,
@@ -16,6 +18,9 @@ async def attempt_share_minting(
     """
     if new_order["order_type"] != "BUY":
         return 0, []
+
+    market_doc = await db.markets.find_one({"_id": market_id})
+    market_title = (market_doc or {}).get("title", "Market")
 
     # Find opposing side BUY orders
     opposite_side = "NO" if new_order["side"] == "YES" else "YES"
@@ -157,6 +162,29 @@ async def attempt_share_minting(
                 'timestamp': datetime.utcnow().isoformat(),
                 'trade_type': 'MINT'
             })
+
+        # Notify both parties that their limit buy was matched (mint)
+        if new_order["user_id"] != opp_order["user_id"]:
+            await notify_limit_order_matched(
+                db,
+                opp_order["user_id"],
+                market_title=market_title,
+                side=opp_order["side"],
+                order_type="BUY",
+                trade_quantity=mint_quantity,
+                price=opp_order["price"],
+                resting_order_complete=opp_filled >= opp_order["quantity"],
+            )
+            await notify_limit_order_matched(
+                db,
+                new_order["user_id"],
+                market_title=market_title,
+                side=new_order["side"],
+                order_type="BUY",
+                trade_quantity=mint_quantity,
+                price=new_order["price"],
+                resting_order_complete=new_filled >= new_order["quantity"],
+            )
 
     return total_filled, trades
 

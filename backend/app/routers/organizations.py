@@ -11,6 +11,7 @@ from app.models import (
 )
 from app.auth import get_current_user
 from app.database import get_database
+from app.services.market_quotes import best_quotes_for_market
 
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
 
@@ -351,7 +352,11 @@ async def create_organization_market(
         current_yes_price=0.5,
         current_no_price=0.5,
         total_volume=0.0,
-        organization_id=org_id
+        organization_id=org_id,
+        yes_best_bid=None,
+        yes_best_ask=None,
+        no_best_bid=None,
+        no_best_ask=None,
     )
 
 
@@ -382,6 +387,7 @@ async def get_organization_markets(
 
     markets = []
     async for market in markets_cursor:
+        yb, ya, nb, na = await best_quotes_for_market(market["_id"], market["status"])
         markets.append(MarketResponse(
             id=str(market["_id"]),
             title=market["title"],
@@ -393,7 +399,11 @@ async def get_organization_markets(
             current_yes_price=market.get("current_yes_price", 0.5),
             current_no_price=market.get("current_no_price", 0.5),
             total_volume=market.get("total_volume", 0.0),
-            organization_id=org_id
+            organization_id=org_id,
+            yes_best_bid=yb,
+            yes_best_ask=ya,
+            no_best_bid=nb,
+            no_best_ask=na,
         ))
 
     return markets
