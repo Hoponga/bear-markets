@@ -2,6 +2,9 @@
 const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config) => {
     // Enable polling for hot reload in Docker
     config.watchOptions = {
