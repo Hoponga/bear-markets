@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 import { useOrderbookUpdates, socketManager } from '@/lib/socket';
-
-import { usePriceUpdates, socketManager } from '@/lib/socket';
 import { marketsAPI } from '@/lib/api';
 interface PriceChartProps {
   marketId: string;
