@@ -340,6 +340,7 @@ async def get_market_comments(market_id: str):
             id=str(c["_id"]),
             user_id=str(c["user_id"]),
             user_name=c["user_name"],
+            user_side=c["user_side"],
             text=c["text"],
             created_at=c["created_at"],
         ))
@@ -352,7 +353,7 @@ async def post_market_comment(
     comment_data: MarketCommentCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Post a comment on a market (requires sign-in)"""
+    """Post a comment on a market (requires holding a position)"""
     if not ObjectId.is_valid(market_id):
         raise HTTPException(status_code=400, detail="Invalid market ID")
 
@@ -364,10 +365,22 @@ async def post_market_comment(
     if not await db.markets.find_one({"_id": ObjectId(market_id)}):
         raise HTTPException(status_code=404, detail="Market not found")
 
+    position = await db.positions.find_one({
+        "market_id": ObjectId(market_id),
+        "user_id": current_user["_id"],
+    })
+    yes_shares = position.get("yes_shares", 0) if position else 0
+    no_shares = position.get("no_shares", 0) if position else 0
+    if yes_shares == 0 and no_shares == 0:
+        raise HTTPException(status_code=403, detail="You must hold a position in this market to comment")
+
+    user_side = "YES" if yes_shares >= no_shares else "NO"
+
     doc = {
         "market_id": ObjectId(market_id),
         "user_id": current_user["_id"],
         "user_name": current_user["name"],
+        "user_side": user_side,
         "text": text,
         "created_at": datetime.utcnow(),
     }
@@ -377,6 +390,7 @@ async def post_market_comment(
         id=str(result.inserted_id),
         user_id=str(current_user["_id"]),
         user_name=current_user["name"],
+        user_side=user_side,
         text=text,
         created_at=doc["created_at"],
     )

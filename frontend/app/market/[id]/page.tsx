@@ -53,6 +53,13 @@ function CommentsSection({ marketId, user }: { marketId: string; user: User | nu
         <div className="space-y-4 mb-4">
           {comments.map((c) => (
             <div key={c.id} className="flex gap-3">
+              <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded h-fit mt-0.5 ${
+                c.user_side === 'YES'
+                  ? 'bg-emerald-900/40 text-emerald-400'
+                  : 'bg-rose-900/40 text-rose-400'
+              }`}>
+                {c.user_side}
+              </span>
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm font-medium text-text-primary">{c.user_name}</span>

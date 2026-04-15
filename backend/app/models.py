@@ -366,5 +366,6 @@ class MarketCommentResponse(BaseModel):
     id: str
     user_id: str
     user_name: str
+    user_side: Literal["YES", "NO"]
     text: str
     created_at: datetime
