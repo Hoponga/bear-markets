@@ -320,7 +320,12 @@ async def transfer_shares(db, from_user_id: ObjectId, to_user_id: ObjectId, mark
 
 
 async def get_orderbook_snapshot(market_id: ObjectId) -> OrderbookResponse:
-    """Get current orderbook snapshot for a market"""
+    """Get current orderbook snapshot for a market.
+
+    When there are no open orders, midpoint_yes / midpoint_no use the latest price_history
+    row if any exists, otherwise the market document's current_yes_price / current_no_price,
+    otherwise 0.5 / 0.5 (via calculate_midpoint on empty sides).
+    """
     from app.database import get_database
     db = await get_database()
 
@@ -357,6 +362,23 @@ async def get_orderbook_snapshot(market_id: ObjectId) -> OrderbookResponse:
     # Calculate midpoints
     yes_midpoint = calculate_midpoint(yes_side)
     no_midpoint = calculate_midpoint(no_side)
+
+    if not orders:
+        last_ph = await db.price_history.find_one(
+            {"market_id": market_id},
+            sort=[("timestamp", -1)],
+        )
+        if last_ph is not None:
+            yes_midpoint = float(last_ph["yes_price"])
+            no_midpoint = float(last_ph["no_price"])
+        else:
+            market = await db.markets.find_one(
+                {"_id": market_id},
+                {"current_yes_price": 1, "current_no_price": 1},
+            )
+            if market is not None:
+                yes_midpoint = float(market.get("current_yes_price", 0.5))
+                no_midpoint = float(market.get("current_no_price", 0.5))
 
     return OrderbookResponse(
         YES=yes_side,

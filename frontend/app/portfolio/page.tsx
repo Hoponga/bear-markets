@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authAPI, ordersAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
 import PositionsList from '@/components/PositionsList';
-import type { Portfolio, Order } from '@/types';
+import type { Portfolio } from '@/types';
 
 export default function PortfolioPage() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function PortfolioPage() {
       <div>
         <h2 className="text-2xl font-medium text-text-primary mb-4">Open Orders</h2>
         {portfolio.open_orders.length > 0 ? (
-          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
+          <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-x-auto">
             <table className="min-w-full divide-y divide-border-primary">
               <thead className="bg-bg-hover">
                 <tr>
@@ -121,8 +122,13 @@ export default function PortfolioPage() {
               <tbody className="divide-y divide-border-primary">
                 {portfolio.open_orders.map((order) => (
                   <tr key={order.id} className="hover:bg-bg-hover">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                      {order.market_id.slice(0, 8)}...
+                    <td className="px-6 py-4 text-sm max-w-md">
+                      <Link
+                        href={`/market/${order.market_id}`}
+                        className="font-medium text-text-secondary hover:text-text-primary hover:underline"
+                      >
+                        {order.market_title ?? `Market ${order.market_id.slice(0, 8)}…`}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

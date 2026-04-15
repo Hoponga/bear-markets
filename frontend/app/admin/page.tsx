@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { marketsAPI, adminAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
@@ -15,9 +15,15 @@ export default function AdminPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [resolutionDate, setResolutionDate] = useState('');
+  const [isParent, setIsParent] = useState(false);
+  const [parentMarketId, setParentMarketId] = useState('');
+  const [initialYesPrice, setInitialYesPrice] = useState(50);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState('');
   const [marketSuccess, setMarketSuccess] = useState('');
+  const [parentMarkets, setParentMarkets] = useState<Market[]>([]);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const [childrenMap, setChildrenMap] = useState<Record<string, Market[]>>({});
 
   // Admin management state
   const [users, setUsers] = useState<UserListEntry[]>([]);
@@ -63,6 +69,8 @@ export default function AdminPage() {
     try {
       const data = await marketsAPI.list('active');
       setMarkets(data);
+      // Filter parent markets for dropdown
+      setParentMarkets(data.filter(m => m.is_parent));
     } catch (err) {
       console.error('Failed to load markets', err);
     }
@@ -107,11 +115,18 @@ export default function AdminPage() {
     setMarketLoading(true);
 
     try {
-      await marketsAPI.create(title, description, resolutionDate);
+      await marketsAPI.create(title, description, parentMarketId ? null : resolutionDate, {
+        isParent: isParent,
+        parentMarketId: parentMarketId || undefined,
+        initialYesPrice: isParent ? 0.5 : initialYesPrice / 100,
+      });
       setMarketSuccess('Market created successfully!');
       setTitle('');
       setDescription('');
       setResolutionDate('');
+      setIsParent(false);
+      setParentMarketId('');
+      setInitialYesPrice(50);
       await loadMarkets();
     } catch (err: any) {
       setMarketError(err.response?.data?.detail || 'Failed to create market');
@@ -203,6 +218,42 @@ export default function AdminPage() {
     }
   };
 
+  const toggleParentExpanded = async (marketId: string) => {
+    const newExpanded = new Set(expandedParents);
+    if (newExpanded.has(marketId)) {
+      newExpanded.delete(marketId);
+    } else {
+      newExpanded.add(marketId);
+      // Load children if not already loaded
+      if (!childrenMap[marketId]) {
+        try {
+          const children = await marketsAPI.getChildren(marketId);
+          setChildrenMap(prev => ({ ...prev, [marketId]: children }));
+        } catch (err) {
+          console.error('Failed to load children', err);
+        }
+      }
+    }
+    setExpandedParents(newExpanded);
+  };
+
+  const handleResolveChildMarket = async (childId: string, outcome: 'YES' | 'NO', parentId: string) => {
+    if (!confirm(`Are you sure you want to resolve this market as ${outcome}?`)) {
+      return;
+    }
+
+    try {
+      await marketsAPI.resolve(childId, outcome);
+      // Reload children for this parent
+      const children = await marketsAPI.getChildren(parentId);
+      setChildrenMap(prev => ({ ...prev, [parentId]: children }));
+      // Reload main markets list to update parent status
+      await loadMarkets();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to resolve market');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-4xl font-semibold text-text-primary mb-8">Admin Panel</h1>
@@ -239,6 +290,16 @@ export default function AdminPage() {
             }`}
           >
             Market Ideas
+          </button>
+          <button
+            onClick={() => setActiveTab('bots')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'bots'
+                ? 'border-text-primary text-text-primary'
+                : 'border-transparent text-text-muted hover:text-text-secondary hover:border-border-secondary'
+            }`}
+          >
+            Bot Monitor
           </button>
         </nav>
       </div>
@@ -279,18 +340,91 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Resolution Date
+              {!isParent && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Starting YES Price
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="1"
+                      max="99"
+                      value={initialYesPrice}
+                      onChange={(e) => setInitialYesPrice(parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-bg-input rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex gap-3 text-sm">
+                      <span className="text-pred-yes font-medium">YES: {initialYesPrice}¢</span>
+                      <span className="text-pred-no font-medium">NO: {100 - initialYesPrice}¢</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-text-muted mt-1">
+                    Set the initial probability. Default is 50/50.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isParent}
+                    onChange={(e) => {
+                      setIsParent(e.target.checked);
+                      if (e.target.checked) setParentMarketId('');
+                    }}
+                    disabled={!!parentMarketId}
+                    className="w-4 h-4 rounded border-border-secondary bg-bg-input"
+                  />
+                  <span className="text-sm text-text-secondary">
+                    This is a parent market (groups related markets)
+                  </span>
                 </label>
-                <input
-                  type="datetime-local"
-                  value={resolutionDate}
-                  onChange={(e) => setResolutionDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-bg-input border border-border-secondary rounded-lg text-text-primary focus:ring-2 focus:ring-border-secondary focus:border-transparent"
-                  required
-                />
               </div>
+
+              {!isParent && parentMarkets.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Parent Market (optional)
+                  </label>
+                  <select
+                    value={parentMarketId}
+                    onChange={(e) => setParentMarketId(e.target.value)}
+                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary rounded-lg text-text-primary focus:ring-2 focus:ring-border-secondary focus:border-transparent"
+                  >
+                    <option value="">No parent (standalone market)</option>
+                    {parentMarkets.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.title}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-text-muted mt-1">
+                    Select a parent market to add this as a child market
+                  </p>
+                </div>
+              )}
+
+              {!parentMarketId && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Resolution Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={resolutionDate}
+                    onChange={(e) => setResolutionDate(e.target.value)}
+                    className="w-full px-4 py-2 bg-bg-input border border-border-secondary rounded-lg text-text-primary focus:ring-2 focus:ring-border-secondary focus:border-transparent"
+                    required={!parentMarketId}
+                  />
+                  {parentMarketId && (
+                    <p className="text-xs text-text-muted mt-1">
+                      Child markets inherit resolution date from parent
+                    </p>
+                  )}
+                </div>
+              )}
 
               {marketError && (
                 <div className="bg-red-900/30 border border-red-700 rounded-lg p-3">
@@ -327,6 +461,9 @@ export default function AdminPage() {
                         Title
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
                         Volume
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
@@ -339,49 +476,140 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-border-primary">
                     {markets.map((market) => (
-                      <tr key={market.id} className="hover:bg-bg-hover">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-primary">
-                          {market.title}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                          ${market.total_volume.toFixed(0)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded ${
-                              market.status === 'active'
-                                ? 'bg-green-900/50 text-green-400'
-                                : 'bg-btn-secondary text-text-muted'
-                            }`}
-                          >
-                            {market.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                          {market.status === 'active' && (
-                            <>
+                      <Fragment key={market.id}>
+                        <tr className="hover:bg-bg-hover">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-primary">
+                            {market.is_parent && (
                               <button
-                                onClick={() => handleResolveMarket(market.id, 'YES')}
-                                className="px-3 py-1 bg-pred-yes-btn text-white rounded hover:bg-pred-yes-btn-hover transition"
+                                onClick={() => toggleParentExpanded(market.id)}
+                                className="mr-2 text-text-muted hover:text-text-primary"
                               >
-                                Resolve YES
+                                {expandedParents.has(market.id) ? '▼' : '▶'}
                               </button>
+                            )}
+                            {market.title}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {market.is_parent ? (
+                              <span className="px-2 py-1 text-xs font-medium rounded bg-accent-purple/30 text-accent-purple">
+                                Parent ({market.child_count || 0} children)
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 text-xs font-medium rounded bg-btn-secondary text-text-muted">
+                                Standard
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                            ${market.total_volume.toFixed(0)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded ${
+                                market.status === 'active'
+                                  ? 'bg-green-900/50 text-green-400'
+                                  : 'bg-btn-secondary text-text-muted'
+                              }`}
+                            >
+                              {market.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                            {market.status === 'active' && !market.is_parent && (
+                              <>
+                                <button
+                                  onClick={() => handleResolveMarket(market.id, 'YES')}
+                                  className="px-3 py-1 bg-pred-yes-btn text-white rounded hover:bg-pred-yes-btn-hover transition"
+                                >
+                                  Resolve YES
+                                </button>
+                                <button
+                                  onClick={() => handleResolveMarket(market.id, 'NO')}
+                                  className="px-3 py-1 bg-pred-no-btn text-white rounded hover:bg-pred-no-btn-hover transition"
+                                >
+                                  Resolve NO
+                                </button>
+                              </>
+                            )}
+                            {market.is_parent && market.status === 'active' && (
                               <button
-                                onClick={() => handleResolveMarket(market.id, 'NO')}
-                                className="px-3 py-1 bg-pred-no-btn text-white rounded hover:bg-pred-no-btn-hover transition"
+                                onClick={() => toggleParentExpanded(market.id)}
+                                className="px-3 py-1 bg-accent-purple/30 text-accent-purple rounded hover:bg-accent-purple/50 transition"
                               >
-                                Resolve NO
+                                {expandedParents.has(market.id) ? 'Hide Children' : 'Manage Children'}
                               </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleDeleteMarket(market.id, market.title)}
-                            className="px-3 py-1 bg-btn-primary text-text-primary rounded hover:bg-btn-primary-hover transition"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
+                            )}
+                            <button
+                              onClick={() => handleDeleteMarket(market.id, market.title)}
+                              className="px-3 py-1 bg-btn-primary text-text-primary rounded hover:bg-btn-primary-hover transition"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                        {/* Child markets row */}
+                        {market.is_parent && expandedParents.has(market.id) && (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-4 bg-bg-hover/50">
+                              <div className="ml-6 border-l-2 border-accent-purple/30 pl-4">
+                                <p className="text-xs text-text-muted mb-3 uppercase tracking-wide">Child Markets</p>
+                                {childrenMap[market.id]?.length ? (
+                                  <div className="space-y-2">
+                                    {childrenMap[market.id].map((child) => (
+                                      <div
+                                        key={child.id}
+                                        className="flex items-center justify-between bg-bg-card rounded-lg p-3 border border-border-primary"
+                                      >
+                                        <div className="flex-1">
+                                          <span className="text-sm font-medium text-text-primary">
+                                            {child.title}
+                                          </span>
+                                          <div className="flex gap-3 mt-1 text-xs text-text-muted">
+                                            <span>YES: {(child.current_yes_price * 100).toFixed(0)}¢</span>
+                                            <span>NO: {(child.current_no_price * 100).toFixed(0)}¢</span>
+                                            <span>Vol: ${child.total_volume.toFixed(0)}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span
+                                            className={`px-2 py-1 text-xs font-medium rounded ${
+                                              child.status === 'active'
+                                                ? 'bg-green-900/50 text-green-400'
+                                                : child.resolved_outcome === 'YES'
+                                                ? 'bg-pred-yes-surface text-pred-yes'
+                                                : 'bg-pred-no-surface text-pred-no'
+                                            }`}
+                                          >
+                                            {child.status === 'resolved' ? `Resolved ${child.resolved_outcome}` : 'Active'}
+                                          </span>
+                                          {child.status === 'active' && (
+                                            <>
+                                              <button
+                                                onClick={() => handleResolveChildMarket(child.id, 'YES', market.id)}
+                                                className="px-2 py-1 text-xs bg-pred-yes-btn text-white rounded hover:bg-pred-yes-btn-hover transition"
+                                              >
+                                                YES
+                                              </button>
+                                              <button
+                                                onClick={() => handleResolveChildMarket(child.id, 'NO', market.id)}
+                                                className="px-2 py-1 text-xs bg-pred-no-btn text-white rounded hover:bg-pred-no-btn-hover transition"
+                                              >
+                                                NO
+                                              </button>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-text-muted">No child markets yet.</p>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -657,6 +885,148 @@ export default function AdminPage() {
           ) : (
             <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
               <p className="text-text-muted">No market ideas found.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bot Monitor Tab */}
+      {activeTab === 'bots' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-medium text-text-primary">Bot Accounts</h2>
+            <button
+              onClick={loadBots}
+              disabled={botsLoading}
+              className="px-4 py-2 bg-btn-secondary border border-border-secondary text-text-secondary rounded-lg hover:bg-btn-secondary-hover transition disabled:opacity-50"
+            >
+              {botsLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+
+          {botsLoading && bots.length === 0 ? (
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+              <p className="text-text-muted">Loading bots...</p>
+            </div>
+          ) : bots.length > 0 ? (
+            <div className="space-y-6">
+              {bots.map((bot) => (
+                <div
+                  key={bot.id}
+                  className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-6"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+                        {bot.name}
+                        <span className="px-2 py-0.5 text-xs font-medium rounded bg-blue-900/30 text-blue-400">
+                          Bot
+                        </span>
+                      </h3>
+                      <p className="text-sm text-text-muted">{bot.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-text-primary">
+                        ${bot.token_balance.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-text-muted">Token Balance</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-bg-hover rounded-lg p-3">
+                      <p className="text-sm text-text-muted">Position Value</p>
+                      <p className="text-lg font-medium text-text-primary">
+                        ${bot.total_position_value.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="bg-bg-hover rounded-lg p-3">
+                      <p className="text-sm text-text-muted">Open Orders</p>
+                      <p className="text-lg font-medium text-text-primary">
+                        {bot.open_orders_count}
+                      </p>
+                    </div>
+                    <div className="bg-bg-hover rounded-lg p-3">
+                      <p className="text-sm text-text-muted">24h Trades</p>
+                      <p className="text-lg font-medium text-text-primary">
+                        {bot.recent_trades_24h}
+                      </p>
+                    </div>
+                    <div className="bg-bg-hover rounded-lg p-3">
+                      <p className="text-sm text-text-muted">Total Value</p>
+                      <p className="text-lg font-medium text-accent-green">
+                        ${(bot.token_balance + bot.total_position_value).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {bot.positions.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-text-secondary mb-2">
+                        Positions ({bot.positions.length})
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-border-primary text-sm">
+                          <thead>
+                            <tr>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-text-muted uppercase">
+                                Market
+                              </th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-text-muted uppercase">
+                                YES
+                              </th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-text-muted uppercase">
+                                NO
+                              </th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-text-muted uppercase">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border-primary">
+                            {bot.positions.map((pos, idx) => (
+                              <tr key={idx} className="hover:bg-bg-hover">
+                                <td className="px-3 py-2 text-text-primary max-w-xs truncate">
+                                  {pos.market_title}
+                                </td>
+                                <td className="px-3 py-2">
+                                  {pos.yes_shares > 0 && (
+                                    <span className="text-pred-yes">
+                                      {pos.yes_shares} @ {(pos.avg_yes_price * 100).toFixed(0)}¢
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2">
+                                  {pos.no_shares > 0 && (
+                                    <span className="text-pred-no">
+                                      {pos.no_shares} @ {(pos.avg_no_price * 100).toFixed(0)}¢
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <span
+                                    className={`px-2 py-0.5 text-xs rounded ${
+                                      pos.market_status === 'active'
+                                        ? 'bg-green-900/50 text-green-400'
+                                        : 'bg-btn-secondary text-text-muted'
+                                    }`}
+                                  >
+                                    {pos.market_status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary p-8 text-center">
+              <p className="text-text-muted">No bot accounts found.</p>
             </div>
           )}
         </div>

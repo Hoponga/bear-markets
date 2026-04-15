@@ -87,6 +87,7 @@ services:
     build:
       context: ./autotrader
     environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - API_URL=http://backend:8000
       - BOT_EMAIL=${BOT_EMAIL:-arbitrage-bot@bearmarket.local}
       - BOT_PASSWORD=${BOT_PASSWORD:-ArbitrageBot123!SecurePassword}

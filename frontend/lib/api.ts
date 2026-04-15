@@ -136,12 +136,25 @@ export const marketsAPI = {
     return data;
   },
 
-  create: async (title: string, description: string, resolutionDate: string): Promise<Market> => {
+  create: async (
+    title: string,
+    description: string,
+    resolutionDate: string | null,
+    options?: { parentMarketId?: string; isParent?: boolean; initialYesPrice?: number }
+  ): Promise<Market> => {
     const { data } = await api.post('/api/markets', {
       title,
       description,
-      resolution_date: resolutionDate,
+      resolution_date: resolutionDate || undefined,
+      parent_market_id: options?.parentMarketId,
+      is_parent: options?.isParent || false,
+      initial_yes_price: options?.initialYesPrice ?? 0.5,
     });
+    return data;
+  },
+
+  getChildren: async (marketId: string): Promise<Market[]> => {
+    const { data } = await api.get(`/api/markets/${marketId}/children`);
     return data;
   },
 

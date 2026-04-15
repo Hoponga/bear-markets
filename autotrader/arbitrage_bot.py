@@ -3,7 +3,9 @@
 Arbitrage Bot for Bear Markets Prediction Platform
 
 This bot maintains market efficiency by:
-1. Seeding new markets with initial positions (50 YES + 50 NO shares)
+1. Seeding new markets with initial positions (50 YES + 50 NO shares): sequential market buys
+   against any asks, then complementary limit BUYs to mint when the book is empty; a short
+   post-seed arb cooldown avoids reacting to our own quote impact.
 2. Exploiting minting arbitrage when best_ask_yes + best_ask_no < 0.99
 3. Exploiting redemption arbitrage when best_bid_yes + best_bid_no > 1.01
 
@@ -46,6 +48,8 @@ class MarketPnL:
     minting_arb_count: int = 0
     redemption_arb_count: int = 0
     seeded: bool = False
+    # After seeding, skip _check_arbitrage this many poll cycles (decremented each visit).
+    post_seed_arb_skips_remaining: int = 0
 
     @property
     def realized_pnl(self) -> float:
@@ -72,6 +76,7 @@ class ArbitrageBot:
     minting_threshold: float = 0.99  # Buy both if asks sum to less than this
     redemption_threshold: float = 1.01  # Sell both if bids sum to more than this
     poll_interval: int = 10  # seconds
+    seed_arb_cooldown_polls: int = 2  # polls to skip arb after seeding this market
 
     _token: Optional[str] = field(default=None, init=False)
     _client: Optional[httpx.AsyncClient] = field(default=None, init=False)
@@ -210,6 +215,37 @@ class ArbitrageBot:
             logger.error(f"Error fetching portfolio: {e}")
             return None
 
+    async def _create_limit_order(
+        self,
+        market_id: str,
+        side: str,
+        order_type: str,
+        price: float,
+        quantity: int,
+    ) -> Optional[dict]:
+        """Place a limit order (POST /api/orders). Used to mint-seed empty books."""
+        try:
+            response = await self._client.post(
+                f"{self.api_url}/api/orders",
+                json={
+                    "market_id": market_id,
+                    "side": side,
+                    "order_type": order_type,
+                    "price": price,
+                    "quantity": quantity,
+                },
+                headers=self._get_headers(),
+            )
+            if response.status_code == 200:
+                return response.json()
+            logger.warning(
+                f"Limit order failed: {response.status_code} - {response.text}"
+            )
+            return None
+        except Exception as e:
+            logger.error(f"Error placing limit order: {e}")
+            return None
+
     async def _create_market_order(
         self,
         market_id: str,
@@ -237,6 +273,18 @@ class ArbitrageBot:
             logger.error(f"Error placing market order: {e}")
             return None
 
+    async def _sync_pnl_shares_from_portfolio(self, market_id: str, pnl: MarketPnL) -> None:
+        """Refresh YES/NO share counts from the API (source of truth after minting)."""
+        portfolio = await self._get_portfolio()
+        if not portfolio:
+            return
+        for pos in portfolio.get("positions", []):
+            if pos.get("market_id") != market_id:
+                continue
+            pnl.yes_shares = int(pos.get("yes_shares", 0) or 0)
+            pnl.no_shares = int(pos.get("no_shares", 0) or 0)
+            return
+
     async def _run_cycle(self):
         """Run one cycle of market scanning and arbitrage"""
         markets = await self._get_markets()
@@ -260,7 +308,14 @@ class ArbitrageBot:
                 logger.info(f"New market discovered: {market_title}")
                 await self._seed_market(market_id, pnl)
 
-            # Check for arbitrage opportunities
+            if pnl.post_seed_arb_skips_remaining > 0:
+                pnl.post_seed_arb_skips_remaining -= 1
+                logger.info(
+                    f"Post-seed arb cooldown: {market_title[:40]} "
+                    f"({pnl.post_seed_arb_skips_remaining} poll(s) left)"
+                )
+                continue
+
             await self._check_arbitrage(market_id, market, pnl)
 
     async def _seed_market(self, market_id: str, pnl: MarketPnL):
@@ -286,27 +341,78 @@ class ArbitrageBot:
         yes_buy_price = yes_asks[0]["price"] if yes_asks else min(yes_price + 0.05, 0.95)
 
         yes_budget = yes_buy_price * self.seed_quantity
-        result = await self._create_market_order(market_id, "YES", "BUY", yes_budget)
-        if result:
-            filled = result.get("shares_filled", 0)
-            spent = result.get("tokens_spent", 0.0)
-            pnl.tokens_spent += spent
-            pnl.yes_shares += filled
-            logger.info(f"  Bought {filled} YES (spent: {spent:.2f})")
-
         no_asks = orderbook.get("NO", {}).get("asks", [])
         no_buy_price = no_asks[0]["price"] if no_asks else min(no_price + 0.05, 0.95)
-
         no_budget = no_buy_price * self.seed_quantity
-        result = await self._create_market_order(market_id, "NO", "BUY", no_budget)
-        if result:
-            filled = result.get("shares_filled", 0)
-            spent = result.get("tokens_spent", 0.0)
+
+        # Sequential market buys (empty book => 0 fills; concurrent buys also race balance checks)
+        yes_result = await self._create_market_order(
+            market_id, "YES", "BUY", yes_budget
+        )
+        no_result = await self._create_market_order(
+            market_id, "NO", "BUY", no_budget
+        )
+
+        yes_filled = yes_result.get("shares_filled", 0) if yes_result else 0
+        no_filled = no_result.get("shares_filled", 0) if no_result else 0
+
+        if yes_result:
+            spent = yes_result.get("tokens_spent", 0.0)
             pnl.tokens_spent += spent
-            pnl.no_shares += filled
-            logger.info(f"  Bought {filled} NO (spent: {spent:.2f})")
+            logger.info(f"  Market: {yes_filled} YES (spent: {spent:.2f})")
+
+        if no_result:
+            spent = no_result.get("tokens_spent", 0.0)
+            pnl.tokens_spent += spent
+            logger.info(f"  Market: {no_filled} NO (spent: {spent:.2f})")
+
+        # Empty book: market BUY walks no asks; mint path needs an opposite BUY at exactly 1-price.
+        # Pair complementary limit BUYs so the second placement triggers share minting.
+        used_mint_seed = False
+        yes_mint_p = 0.5
+        no_mint_p = 0.5
+        if yes_filled == 0 and no_filled == 0:
+            used_mint_seed = True
+            yes_mint_p = float(os.getenv("SEED_MINT_YES_PRICE", "0.5"))
+            no_mint_p = round(1.0 - yes_mint_p, 2)
+            logger.info(
+                f"  No asks to hit; mint-seed YES @ {yes_mint_p} / NO @ {no_mint_p} "
+                f"qty={self.seed_quantity}"
+            )
+            y_lim = await self._create_limit_order(
+                market_id, "YES", "BUY", yes_mint_p, self.seed_quantity
+            )
+            n_lim = await self._create_limit_order(
+                market_id, "NO", "BUY", no_mint_p, self.seed_quantity
+            )
+            if not y_lim:
+                logger.warning("  Mint-seed: YES limit failed")
+            if not n_lim:
+                logger.warning("  Mint-seed: NO limit failed")
+            if y_lim:
+                logger.info(
+                    f"  YES limit filled={y_lim.get('filled_quantity', 0)} "
+                    f"status={y_lim.get('status')}"
+                )
+            if n_lim:
+                logger.info(
+                    f"  NO limit filled={n_lim.get('filled_quantity', 0)} "
+                    f"status={n_lim.get('status')}"
+                )
+
+        await self._sync_pnl_shares_from_portfolio(market_id, pnl)
+        if used_mint_seed:
+            minted_pairs = min(pnl.yes_shares, pnl.no_shares)
+            if minted_pairs > 0:
+                pnl.tokens_spent += minted_pairs * (yes_mint_p + no_mint_p)
+
+        if pnl.yes_shares == 0 and pnl.no_shares == 0:
+            logger.warning(
+                "  Seeding produced no position; check token balance and market state"
+            )
 
         pnl.seeded = True
+        pnl.post_seed_arb_skips_remaining = max(0, self.seed_arb_cooldown_polls)
 
     async def _check_arbitrage(self, market_id: str, market: dict, pnl: MarketPnL):
         """Check and execute arbitrage opportunities"""
@@ -453,6 +559,7 @@ async def main():
     seed_quantity = int(os.getenv("SEED_QUANTITY", "50"))
     minting_threshold = float(os.getenv("MINTING_THRESHOLD", "0.99"))
     redemption_threshold = float(os.getenv("REDEMPTION_THRESHOLD", "1.01"))
+    seed_arb_cooldown_polls = int(os.getenv("SEED_ARB_COOLDOWN_POLLS", "2"))
 
     bot = ArbitrageBot(
         api_url=api_url,
@@ -461,7 +568,8 @@ async def main():
         seed_quantity=seed_quantity,
         minting_threshold=minting_threshold,
         redemption_threshold=redemption_threshold,
-        poll_interval=poll_interval
+        poll_interval=poll_interval,
+        seed_arb_cooldown_polls=seed_arb_cooldown_polls,
     )
 
     try:

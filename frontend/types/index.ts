@@ -25,6 +25,10 @@ export interface Market {
   yes_best_ask?: number | null;
   no_best_bid?: number | null;
   no_best_ask?: number | null;
+  /** Parent market fields */
+  parent_market_id?: string | null;
+  is_parent?: boolean;
+  child_count?: number;
 }
 
 export interface Organization {

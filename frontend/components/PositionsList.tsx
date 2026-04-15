@@ -36,7 +36,7 @@ export default function PositionsList({ positions }: PositionsListProps) {
   const rows = sortPositions(positions);
 
   return (
-    <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-hidden">
+    <div className="bg-bg-card rounded-lg shadow-lg border border-border-primary overflow-x-auto">
       <table className="min-w-full divide-y divide-border-primary">
         <thead className="bg-bg-hover">
           <tr>

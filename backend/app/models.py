@@ -44,7 +44,11 @@ class UserResponse(BaseModel):
 class MarketCreate(BaseModel):
     title: str
     description: str
-    resolution_date: datetime
+    resolution_date: Optional[datetime] = None  # Optional if child market (inherits from parent)
+    parent_market_id: Optional[str] = None  # If this is a child market
+    is_parent: bool = False  # True if this is a parent/group market
+    initial_yes_price: Optional[float] = 0.5  # Starting YES price (NO will be 1 - YES)
+
 
 class MarketResponse(BaseModel):
     id: str
@@ -63,6 +67,10 @@ class MarketResponse(BaseModel):
     yes_best_ask: Optional[float] = None
     no_best_bid: Optional[float] = None
     no_best_ask: Optional[float] = None
+    # Parent market fields
+    parent_market_id: Optional[str] = None  # If this is a child market
+    is_parent: bool = False  # True if this is a parent/group market
+    child_count: int = 0  # Number of child markets (for parent markets)
 
 class MarketResolve(BaseModel):
     outcome: Literal["YES", "NO"]

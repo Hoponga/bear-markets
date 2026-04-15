@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { marketsAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
 import OrderBook from '@/components/OrderBook';
@@ -107,6 +108,7 @@ export default function MarketDetailPage() {
   const params = useParams();
   const marketId = params.id as string;
   const [market, setMarket] = useState<Market | null>(null);
+  const [childMarkets, setChildMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState<User | null>(null);
@@ -121,6 +123,11 @@ export default function MarketDetailPage() {
     try {
       const data = await marketsAPI.get(marketId);
       setMarket(data);
+      // If this is a parent market, load child markets
+      if (data.is_parent) {
+        const children = await marketsAPI.getChildren(marketId);
+        setChildMarkets(children);
+      }
     } catch (err: any) {
       setError('Failed to load market');
       console.error(err);
@@ -153,6 +160,7 @@ export default function MarketDetailPage() {
   const yesPrice = (market.current_yes_price * 100).toFixed(1);
   const noPrice = (market.current_no_price * 100).toFixed(1);
   const isAdmin = user?.is_admin ?? false;
+  const isParent = market.is_parent;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -165,6 +173,83 @@ export default function MarketDetailPage() {
     return `${month} ${day}${suffix}, ${year}`;
   };
 
+  // Parent market view - show child markets
+  if (isParent) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-2">
+          <span className="px-2 py-1 text-xs font-medium rounded bg-accent-purple/20 text-accent-purple">
+            Market Group
+          </span>
+        </div>
+
+        <h1 className="text-3xl font-bold text-text-primary mb-4">{market.title}</h1>
+        <p className="text-text-muted mb-6">{market.description}</p>
+
+        <div className="flex space-x-6 text-sm text-text-disabled mb-8">
+          <span>Total Volume: ${market.total_volume.toFixed(0)}</span>
+          <span>Closes: {formatDate(market.resolution_date)}</span>
+          <span className={market.status === 'active' ? 'text-success' : 'text-text-disabled'}>
+            {market.status === 'active' ? '● Active' : '○ Resolved'}
+          </span>
+        </div>
+
+        <h2 className="text-xl font-semibold text-text-primary mb-4">
+          Related Markets ({childMarkets.length})
+        </h2>
+
+        {childMarkets.length > 0 ? (
+          <div className="flex flex-col gap-6">
+            {childMarkets.map((child) => {
+              const childYes = (child.current_yes_price * 100).toFixed(1);
+              const childNo = (child.current_no_price * 100).toFixed(1);
+              return (
+                <Link key={child.id} href={`/market/${child.id}`} className="block">
+                  <div className="bg-bg-card rounded-lg border border-border-primary p-5 hover:border-border-secondary transition cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0 mr-4">
+                        <h3 className="text-lg font-semibold text-text-primary truncate">
+                          {child.title}
+                        </h3>
+                        <p className="text-sm text-text-muted truncate">{child.description}</p>
+                      </div>
+                      <div className="flex gap-3 flex-shrink-0">
+                        <div className="bg-pred-yes-surface border border-pred-yes-ring rounded-lg px-4 py-2 text-center min-w-[80px]">
+                          <p className="text-xs text-pred-yes font-medium">YES</p>
+                          <p className="text-xl font-bold text-pred-yes">{childYes}¢</p>
+                        </div>
+                        <div className="bg-pred-no-surface border border-pred-no-ring rounded-lg px-4 py-2 text-center min-w-[80px]">
+                          <p className="text-xs text-pred-no font-medium">NO</p>
+                          <p className="text-xl font-bold text-pred-no">{childNo}¢</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-4 text-xs text-text-disabled mt-2">
+                      <span>Volume: ${child.total_volume.toFixed(0)}</span>
+                      <span className={child.status === 'active' ? 'text-success' : 'text-text-disabled'}>
+                        {child.status === 'active' ? '● Active' : '○ Resolved'}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-bg-card rounded-lg border border-border-primary p-8 text-center">
+            <p className="text-text-muted">No related markets yet.</p>
+          </div>
+        )}
+
+        {/* Comments for parent market */}
+        <div className="mt-8">
+          <CommentsSection marketId={marketId} user={user} />
+        </div>
+      </div>
+    );
+  }
+
+  // Regular market view (non-parent)
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -230,13 +315,15 @@ export default function MarketDetailPage() {
             marketId={marketId}
             refreshKey={limitOrdersTick}
           />
-          <TradeInterface
-            marketId={marketId}
-            onOrderPlaced={() => {
-              loadMarket();
-              setLimitOrdersTick((t) => t + 1);
-            }}
-          />
+          {market.status === 'active' && (
+            <TradeInterface
+              marketId={marketId}
+              onOrderPlaced={() => {
+                loadMarket();
+                setLimitOrdersTick((t) => t + 1);
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
