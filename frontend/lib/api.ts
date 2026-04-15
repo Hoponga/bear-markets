@@ -180,6 +180,16 @@ export const marketsAPI = {
     const { data} = await api.get('/api/markets/private/my-markets');
     return data;
   },
+
+  getComments: async (marketId: string) => {
+    const { data } = await api.get(`/api/markets/${marketId}/comments`);
+    return data;
+  },
+
+  postComment: async (marketId: string, text: string) => {
+    const { data } = await api.post(`/api/markets/${marketId}/comments`, { text });
+    return data;
+  },
 };
 
 // Orders endpoints

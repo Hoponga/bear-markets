@@ -3,7 +3,7 @@ from typing import List
 from bson import ObjectId
 from datetime import datetime
 
-from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookResponse
+from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookResponse, MarketCommentCreate, MarketCommentResponse
 from app.auth import get_current_user, get_current_admin
 from app.database import get_database
 from app.services.market_quotes import best_quotes_for_market
@@ -322,3 +322,61 @@ async def delete_market(
     return {
         "message": f"Market deleted successfully. Refunded ${total_refunded:.2f} to {users_refunded} users."
     }
+
+
+@router.get("/{market_id}/comments", response_model=List[MarketCommentResponse])
+async def get_market_comments(market_id: str):
+    """Get all comments for a market (public)"""
+    if not ObjectId.is_valid(market_id):
+        raise HTTPException(status_code=400, detail="Invalid market ID")
+
+    db = await get_database()
+    if not await db.markets.find_one({"_id": ObjectId(market_id)}):
+        raise HTTPException(status_code=404, detail="Market not found")
+
+    comments = []
+    async for c in db.market_comments.find({"market_id": ObjectId(market_id)}).sort("created_at", 1):
+        comments.append(MarketCommentResponse(
+            id=str(c["_id"]),
+            user_id=str(c["user_id"]),
+            user_name=c["user_name"],
+            text=c["text"],
+            created_at=c["created_at"],
+        ))
+    return comments
+
+
+@router.post("/{market_id}/comments", response_model=MarketCommentResponse)
+async def post_market_comment(
+    market_id: str,
+    comment_data: MarketCommentCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Post a comment on a market (requires sign-in)"""
+    if not ObjectId.is_valid(market_id):
+        raise HTTPException(status_code=400, detail="Invalid market ID")
+
+    text = comment_data.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Comment cannot be empty")
+
+    db = await get_database()
+    if not await db.markets.find_one({"_id": ObjectId(market_id)}):
+        raise HTTPException(status_code=404, detail="Market not found")
+
+    doc = {
+        "market_id": ObjectId(market_id),
+        "user_id": current_user["_id"],
+        "user_name": current_user["name"],
+        "text": text,
+        "created_at": datetime.utcnow(),
+    }
+    result = await db.market_comments.insert_one(doc)
+
+    return MarketCommentResponse(
+        id=str(result.inserted_id),
+        user_id=str(current_user["_id"]),
+        user_name=current_user["name"],
+        text=text,
+        created_at=doc["created_at"],
+    )

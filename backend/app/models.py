@@ -356,3 +356,15 @@ class BetCommentResponse(BaseModel):
     user_side: Literal["YES", "NO"]
     text: str
     created_at: datetime
+
+
+# Market Comment Models
+class MarketCommentCreate(BaseModel):
+    text: str
+
+class MarketCommentResponse(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    text: str
+    created_at: datetime
