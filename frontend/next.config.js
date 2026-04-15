@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
-// Rewrites run inside the Node server. In Docker, localhost is the frontend container — use the backend service name.
-// Browser code should keep using NEXT_PUBLIC_API_URL (localhost) for direct calls; INTERNAL_API_URL is server-only.
+// Rewrites run on the Next.js server. Use INTERNAL_API_URL for the upstream API host
+// (e.g. http://backend:8000 in Docker, or Railway private URL). Browsers still call /api/proxy;
+// INTERNAL_API_URL is never exposed to the client.
 const backendUrl =
   process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -24,6 +25,6 @@ const nextConfig = {
       },
     ];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

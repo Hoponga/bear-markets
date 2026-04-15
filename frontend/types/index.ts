@@ -242,6 +242,15 @@ export interface BetComment {
   created_at: string;
 }
 
+export interface MarketComment {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_side: 'YES' | 'NO';
+  text: string;
+  created_at: string;
+}
+
 // Notification Types
 export interface Notification {
   id: string;
