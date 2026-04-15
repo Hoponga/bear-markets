@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { socketManager, useOrderbookUpdates } from '@/lib/socket';
 import { marketsAPI } from '@/lib/api';
 import type { Orderbook, OrderbookLevel } from '@/types';
 
@@ -20,31 +19,6 @@ export default function OrderBook({ marketId, side }: OrderBookProps) {
       setOrderbook(data);
       setLoading(false);
     });
-
-    // Connect to WebSocket
-    socketManager.connect();
-    socketManager.subscribeMarket(marketId);
-
-    // Subscribe to orderbook updates
-    const unsubscribe = useOrderbookUpdates(marketId, (data) => {
-      setOrderbook({
-        YES: {
-          bids: data.orderbook.YES.bids,
-          asks: data.orderbook.YES.asks,
-        },
-        NO: {
-          bids: data.orderbook.NO.bids,
-          asks: data.orderbook.NO.asks,
-        },
-        midpoint_yes: data.midpoint.YES,
-        midpoint_no: data.midpoint.NO,
-      });
-    });
-
-    return () => {
-      unsubscribe();
-      socketManager.unsubscribeMarket(marketId);
-    };
   }, [marketId]);
 
   if (loading || !orderbook) {
@@ -59,7 +33,7 @@ export default function OrderBook({ marketId, side }: OrderBookProps) {
       key={`${type}-${level.price}`}
       className="grid grid-cols-2 py-2 px-3 hover:bg-bg-hover"
     >
-      <span className={`font-medium ${type === 'bid' ? 'text-green-400' : 'text-red-400'}`}>
+      <span className={`font-medium ${type === 'bid' ? 'text-pred-yes' : 'text-pred-no'}`}>
         ${level.price.toFixed(2)}
       </span>
       <span className="text-text-secondary text-right">{level.quantity}</span>

@@ -3,16 +3,40 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:latest
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     environment:
       MONGO_INITDB_DATABASE: berkeley_markets
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  init:
+    build:
+      context: ./scripts
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - DATABASE_NAME=berkeley_markets
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@bearmarket.local}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-AdminPassword123!}
+      - ADMIN_NAME=${ADMIN_NAME:-Admin}
+      - BOT_EMAIL=${BOT_EMAIL:-arbitrage-bot@bearmarket.local}
+      - BOT_PASSWORD=${BOT_PASSWORD:-ArbitrageBot123!SecurePassword}
+      - BOT_NAME=${BOT_NAME:-Arbitrage Bot}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
 
   backend:
     build:
       context: ./backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
@@ -21,31 +45,61 @@ services:
       - MONGODB_URL=mongodb://mongodb:27017
       - DATABASE_NAME=berkeley_markets
       - JWT_SECRET=${JWT_SECRET:-your-secret-key}
-      - FRONTEND_URL=http://localhost:3000
+      # Must match host port for frontend (Cursor often uses 3000–3001; default 3100 avoids that)
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3100}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
     command: uvicorn app.main:socket_app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    # package.json dev script listens on 3000 inside the container; host port is mapped below
+    command: npm run dev
+    # Default 3100: Cursor often binds 3000–3001. Override in .env: FRONTEND_HOST_PORT / FRONTEND_URL
     ports:
-      - "3000:3000"
+      - "${FRONTEND_HOST_PORT:-3100}:3000"
     volumes:
       - ./frontend/app:/app/app
       - ./frontend/components:/app/components
       - ./frontend/lib:/app/lib
       - ./frontend/types:/app/types
       - ./frontend/public:/app/public
+      - ./frontend/next.config.js:/app/next.config.js
     environment:
+      # Browser on host → published backend port
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_WS_URL=http://localhost:8000
+      # Next.js rewrites (/api/proxy) run inside this container → Docker service name
+      - INTERNAL_API_URL=http://backend:8000
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       - WATCHPACK_POLLING=true
     depends_on:
       - backend
+
+  autotrader:
+    build:
+      context: ./autotrader
+    environment:
+      - API_URL=http://backend:8000
+      - BOT_EMAIL=${BOT_EMAIL:-arbitrage-bot@bearmarket.local}
+      - BOT_PASSWORD=${BOT_PASSWORD:-ArbitrageBot123!SecurePassword}
+      - POLL_INTERVAL=${POLL_INTERVAL:-10}
+      - SEED_QUANTITY=${SEED_QUANTITY:-50}
+      - MINTING_THRESHOLD=${MINTING_THRESHOLD:-0.99}
+      - REDEMPTION_THRESHOLD=${REDEMPTION_THRESHOLD:-1.01}
+    depends_on:
+      backend:
+        condition: service_started
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   mongodb_data:

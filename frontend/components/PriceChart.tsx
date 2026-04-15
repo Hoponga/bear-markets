@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-import { useOrderbookUpdates, socketManager } from '@/lib/socket';
 import { marketsAPI } from '@/lib/api';
 interface PriceChartProps {
   marketId: string;
@@ -18,7 +17,6 @@ interface PricePoint {
 export default function PriceChart({ marketId }: PriceChartProps) {
   const [priceHistory, setPriceHistory] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const latestPricesRef = useRef({ yes_price: 0.5, no_price: 0.5 });
 
   // Fetch historical price data on mount
   useEffect(() => {
@@ -31,15 +29,6 @@ export default function PriceChart({ marketId }: PriceChartProps) {
           no_price: point.no_price,
         }));
         setPriceHistory(history);
-
-        // Update latest prices reference
-        if (history.length > 0) {
-          const lastPoint = history[history.length - 1];
-          latestPricesRef.current = {
-            yes_price: lastPoint.yes_price,
-            no_price: lastPoint.no_price,
-          };
-        }
       } catch (err) {
         console.error('Failed to fetch price history:', err);
         // Fallback to default starting point
@@ -52,34 +41,6 @@ export default function PriceChart({ marketId }: PriceChartProps) {
     };
 
     fetchPriceHistory();
-  }, [marketId]);
-
-  // Subscribe to real-time price updates
-  useEffect(() => {
-    socketManager.connect();
-    socketManager.subscribeMarket(marketId);
-
-    const unsubscribe = useOrderbookUpdates(marketId, (data) => {
-      const yesPrice = data.midpoint.YES;
-      const noPrice = data.midpoint.NO;
-      setPriceHistory((prev) => {
-        const last = prev[prev.length - 1];
-        if (last && last.yes_price === yesPrice && last.no_price === noPrice) {
-          return prev; // no change, skip
-        }
-        const newPoint: PricePoint = {
-          timestamp: new Date().toISOString(),
-          yes_price: yesPrice,
-          no_price: noPrice,
-        };
-        return [...prev.slice(-50), newPoint];
-      });
-    });
-
-    return () => {
-      unsubscribe();
-      socketManager.unsubscribeMarket(marketId);
-    };
   }, [marketId]);
 
   const timeSpanMs = priceHistory.length > 1

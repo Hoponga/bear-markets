@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { authAPI } from '@/lib/api';
+import ActiveLimitOrders from '@/components/ActiveLimitOrders';
 import { authStorage } from '@/lib/auth';
 import type { User } from '@/types';
 
@@ -147,6 +148,8 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      <ActiveLimitOrders showMarketLink className="mb-10" />
 
       {/* Danger Zone */}
       <div className="bg-bg-card rounded-lg border border-red-500/30 p-6">

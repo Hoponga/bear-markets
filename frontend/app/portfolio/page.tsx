@@ -144,8 +144,8 @@ export default function PortfolioPage() {
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${
                           order.side === 'YES'
-                            ? 'bg-green-900/50 text-green-400 border border-green-700'
-                            : 'bg-red-900/50 text-red-400 border border-red-700'
+                            ? 'bg-pred-yes-surface text-pred-yes border border-pred-yes-ring'
+                            : 'bg-pred-no-surface text-pred-no border border-pred-no-ring'
                         }`}
                       >
                         {order.side}

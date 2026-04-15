@@ -27,11 +27,13 @@ async def get_notifications(
     async for notif in notifications_cursor:
         if not notif["read"]:
             unread_count += 1
+        mid = notif.get("market_id")
         notifications.append(NotificationResponse(
             id=str(notif["_id"]),
             message=notif["message"],
             bet_id=str(notif["bet_id"]) if notif.get("bet_id") else None,
             organization_id=str(notif["organization_id"]) if notif.get("organization_id") else None,
+            market_id=str(mid) if mid else None,
             read=notif["read"],
             created_at=notif["created_at"]
         ))

@@ -162,7 +162,6 @@ async def attempt_share_minting(
         total_filled += mint_quantity
         remaining_quantity -= mint_quantity
 
-        # Emit WebSocket event for trade
         if sio:
             await sio.emit('trade_executed', {
                 'market_id': str(market_id),
@@ -178,6 +177,7 @@ async def attempt_share_minting(
             await notify_limit_order_matched(
                 db,
                 opp_order["user_id"],
+                market_id=market_id,
                 market_title=market_title,
                 side=opp_order["side"],
                 order_type="BUY",
@@ -188,6 +188,7 @@ async def attempt_share_minting(
             await notify_limit_order_matched(
                 db,
                 new_order["user_id"],
+                market_id=market_id,
                 market_title=market_title,
                 side=new_order["side"],
                 order_type="BUY",

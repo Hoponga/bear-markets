@@ -11,12 +11,11 @@ import type {
   UserListResponse,
   MarketIdea,
   MarketIdeasResponse,
-  MarketOrderResponse
+  MarketOrderResponse,
+  BotStatus
 } from '@/types';
 
 const API_URL = '/api/proxy';
-
-console.log('API URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -226,10 +225,11 @@ export const ordersAPI = {
     return data;
   },
 
-  getMyOrders: async (status?: string): Promise<Order[]> => {
-    const { data } = await api.get('/api/orders/my-orders', {
-      params: status ? { status_filter: status } : {},
-    });
+  getMyOrders: async (opts?: { status?: string; activeOnly?: boolean }): Promise<Order[]> => {
+    const params: Record<string, string | boolean> = {};
+    if (opts?.status) params.status_filter = opts.status;
+    if (opts?.activeOnly) params.active_only = true;
+    const { data } = await api.get('/api/orders/my-orders', { params });
     return data;
   },
 
@@ -250,9 +250,9 @@ export const leaderboardAPI = {
 
 // Admin endpoints
 export const adminAPI = {
-  listUsers: async (page: number = 1, pageSize: number = 20): Promise<UserListResponse> => {
+  listUsers: async (page: number = 1, pageSize: number = 20, includeBots: boolean = false): Promise<UserListResponse> => {
     const { data } = await api.get('/api/auth/users', {
-      params: { page, page_size: pageSize },
+      params: { page, page_size: pageSize, include_bots: includeBots },
     });
     return data;
   },
@@ -264,6 +264,11 @@ export const adminAPI = {
 
   removeAdmin: async (email: string): Promise<{ message: string }> => {
     const { data } = await api.post('/api/auth/remove-admin', { email });
+    return data;
+  },
+
+  getBots: async (): Promise<{ bots: BotStatus[] }> => {
+    const { data } = await api.get('/api/auth/bots');
     return data;
   },
 

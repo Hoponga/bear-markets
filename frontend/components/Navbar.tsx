@@ -8,6 +8,16 @@ import { authAPI, organizationsAPI, notificationsAPI } from '@/lib/api';
 import AuthModal from './AuthModal';
 import type { User, Organization, Notification } from '@/types';
 
+function notificationLink(notif: Notification): string | null {
+  if (notif.market_id) {
+    return `/market/${notif.market_id}`;
+  }
+  if (notif.organization_id && notif.bet_id) {
+    return `/organizations/${notif.organization_id}/bets/${notif.bet_id}`;
+  }
+  return null;
+}
+
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -120,13 +130,29 @@ export default function Navbar() {
     setShowAuthModal(false);
   };
 
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(() =>
+    typeof window !== 'undefined'
+      ? (localStorage.getItem('theme') as 'light' | 'dark' | null)
+      : null
+  );
+  const [systemPrefersLight, setSystemPrefersLight] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-color-scheme: light)').matches
+      : false
+  );
 
   useEffect(() => {
-    // Read saved preference; null means "follow system"
-    const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    setTheme(saved);
-  }, []);
+    if (theme !== null) return;
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const onChange = () => setSystemPrefersLight(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [theme]);
+
+  const isLightUi =
+    theme === 'light' || (theme === null && systemPrefersLight);
+  const logoSrc = isLightUi ? '/logo_light_mode.png' : '/logo.png';
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -150,7 +176,13 @@ export default function Navbar() {
           <div className="flex justify-between items-center py-3">
             {/* Left - Logo */}
             <Link href="/" className="flex items-center space-x-2">
-              <Image src="/logo.png" alt="Bearmarket" width={48} height={48} />
+              <Image
+                key={logoSrc}
+                src={logoSrc}
+                alt="Bearmarket"
+                width={48}
+                height={48}
+              />
               <span className="text-sm font-medium text-navbar-link uppercase tracking-widest">
                 Bearmarket
               </span>
@@ -213,17 +245,32 @@ export default function Navbar() {
                           {notifications.length === 0 ? (
                             <p className="p-3 text-sm text-text-muted text-center">No notifications</p>
                           ) : (
-                            notifications.map((notif) => (
-                              <div
-                                key={notif.id}
-                                className={`p-3 border-b border-border-primary text-sm ${notif.read ? 'text-text-muted' : 'text-text-primary bg-bg-hover'}`}
-                              >
-                                {notif.message}
-                                <p className="text-xs text-text-disabled mt-1">
-                                  {new Date(notif.created_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                            ))
+                            notifications.map((notif) => {
+                              const href = notificationLink(notif);
+                              const rowClass = `p-3 border-b border-border-primary text-sm ${notif.read ? 'text-text-muted' : 'text-text-primary bg-bg-hover'}`;
+                              const inner = (
+                                <>
+                                  {notif.message}
+                                  <p className="text-xs text-text-disabled mt-1">
+                                    {new Date(notif.created_at).toLocaleDateString()}
+                                  </p>
+                                </>
+                              );
+                              return href ? (
+                                <Link
+                                  key={notif.id}
+                                  href={href}
+                                  onClick={() => setShowNotifications(false)}
+                                  className={`block ${rowClass} hover:brightness-95 dark:hover:brightness-110 transition`}
+                                >
+                                  {inner}
+                                </Link>
+                              ) : (
+                                <div key={notif.id} className={rowClass}>
+                                  {inner}
+                                </div>
+                              );
+                            })
                           )}
                         </div>
                       </div>

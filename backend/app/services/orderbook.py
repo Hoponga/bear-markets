@@ -135,6 +135,7 @@ async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
             await notify_limit_order_matched(
                 db,
                 sell_order["user_id"],
+                market_id=market_id,
                 market_title=market_title,
                 side=buy_order["side"],
                 order_type="SELL",
@@ -143,7 +144,6 @@ async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
                 resting_order_complete=sell_filled >= sell_order["quantity"],
             )
 
-        # Emit WebSocket event
         if sio:
             await sio.emit('trade_executed', {
                 'market_id': str(market_id),
@@ -287,6 +287,7 @@ async def match_sell_order(db, market_id: ObjectId, sell_order: dict, sio) -> in
             await notify_limit_order_matched(
                 db,
                 buy_order["user_id"],
+                market_id=market_id,
                 market_title=market_title,
                 side=sell_order["side"],
                 order_type="BUY",
@@ -295,7 +296,6 @@ async def match_sell_order(db, market_id: ObjectId, sell_order: dict, sio) -> in
                 resting_order_complete=buy_filled >= buy_order["quantity"],
             )
 
-        # Emit WebSocket event
         if sio:
             await sio.emit('trade_executed', {
                 'market_id': str(market_id),
@@ -447,10 +447,8 @@ async def update_market_price(db, market_id: ObjectId, sio=None):
         }
     )
 
-    # Store price history
     price_changed = await store_price_history(db, market_id, yes_price, no_price, "orderbook")
 
-    # Emit price update via WebSocket if price changed
     if sio and price_changed:
         await sio.emit('price_update', {
             'market_id': str(market_id),

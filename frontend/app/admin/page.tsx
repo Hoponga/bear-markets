@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { marketsAPI, adminAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
-import type { Market, UserListEntry, MarketIdea } from '@/types';
+import type { Market, UserListEntry, MarketIdea, BotStatus } from '@/types';
 
 export default function AdminPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'markets' | 'admins' | 'ideas'>('markets');
+  const [activeTab, setActiveTab] = useState<'markets' | 'admins' | 'ideas' | 'bots'>('markets');
 
   // Markets state
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -34,6 +34,10 @@ export default function AdminPage() {
   const [ideasTotalPages, setIdeasTotalPages] = useState(1);
   const [ideasFilter, setIdeasFilter] = useState<string>('pending');
 
+  // Bot monitoring state
+  const [bots, setBots] = useState<BotStatus[]>([]);
+  const [botsLoading, setBotsLoading] = useState(false);
+
   useEffect(() => {
     const user = authStorage.getUser();
     if (!user || !user.is_admin) {
@@ -44,6 +48,7 @@ export default function AdminPage() {
     loadMarkets();
     loadUsers();
     loadIdeas();
+    loadBots();
   }, []);
 
   useEffect(() => {
@@ -80,6 +85,18 @@ export default function AdminPage() {
       setIdeasTotalPages(data.total_pages);
     } catch (err) {
       console.error('Failed to load ideas', err);
+    }
+  };
+
+  const loadBots = async () => {
+    setBotsLoading(true);
+    try {
+      const data = await adminAPI.getBots();
+      setBots(data.bots);
+    } catch (err) {
+      console.error('Failed to load bots', err);
+    } finally {
+      setBotsLoading(false);
     }
   };
 
@@ -160,6 +177,20 @@ export default function AdminPage() {
       await loadUsers();
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Failed to remove admin');
+    }
+  };
+
+  const handleMakeAdminDirect = async (email: string, name: string) => {
+    if (!confirm(`Make ${name} (${email}) an admin?`)) {
+      return;
+    }
+
+    try {
+      const result = await adminAPI.makeAdmin(email);
+      alert(result.message);
+      await loadUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to make admin');
     }
   };
 
@@ -331,13 +362,13 @@ export default function AdminPage() {
                             <>
                               <button
                                 onClick={() => handleResolveMarket(market.id, 'YES')}
-                                className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-600 transition"
+                                className="px-3 py-1 bg-pred-yes-btn text-white rounded hover:bg-pred-yes-btn-hover transition"
                               >
                                 Resolve YES
                               </button>
                               <button
                                 onClick={() => handleResolveMarket(market.id, 'NO')}
-                                className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-600 transition"
+                                className="px-3 py-1 bg-pred-no-btn text-white rounded hover:bg-pred-no-btn-hover transition"
                               >
                                 Resolve NO
                               </button>
@@ -438,6 +469,11 @@ export default function AdminPage() {
                     <tr key={user.id} className="hover:bg-bg-hover">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-primary">
                         {user.name}
+                        {user.is_bot && (
+                          <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-blue-900/30 text-blue-400">
+                            Bot
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {user.email}
@@ -456,13 +492,20 @@ export default function AdminPage() {
                           {user.is_admin ? 'Admin' : 'User'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {user.is_admin && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                        {user.is_admin ? (
                           <button
                             onClick={() => handleRemoveAdmin(user.email)}
                             className="text-red-400 hover:text-red-300 font-medium"
                           >
                             Remove Admin
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleMakeAdminDirect(user.email, user.name)}
+                            className="text-accent-purple hover:text-accent-purple/80 font-medium"
+                          >
+                            Make Admin
                           </button>
                         )}
                       </td>
