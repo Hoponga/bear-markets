@@ -13,6 +13,7 @@ import type { Market, User, MarketComment } from '@/types';
 
 function CommentsSection({ marketId, user }: { marketId: string; user: User | null }) {
   const [comments, setComments] = useState<MarketComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +22,11 @@ function CommentsSection({ marketId, user }: { marketId: string; user: User | nu
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    marketsAPI.getComments(marketId).then(setComments).catch(() => {});
+    setCommentsLoading(true);
+    marketsAPI.getComments(marketId)
+      .then(setComments)
+      .catch(() => {})
+      .finally(() => setCommentsLoading(false));
   }, [marketId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,7 +119,9 @@ function CommentsSection({ marketId, user }: { marketId: string; user: User | nu
     <div>
       <h2 className="text-xl font-bold text-text-primary mb-4">Discussion</h2>
 
-      {topLevel.length === 0 ? (
+      {commentsLoading ? (
+        <p className="text-text-disabled text-sm text-center py-4 mb-4">Loading...</p>
+      ) : topLevel.length === 0 ? (
         <p className="text-text-disabled text-sm text-center py-4 mb-4">
           No comments yet — be the first!
         </p>
