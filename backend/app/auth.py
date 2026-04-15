@@ -54,20 +54,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)):
-    """Get current user from JWT token if provided, otherwise return None"""
+    """Get current user from JWT token if provided, otherwise return None. Never raises."""
     if not credentials:
         return None
     try:
         token = credentials.credentials
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
-        if user_id is None:
+        if not user_id:
             return None
-    except JWTError:
+        db = await get_database()
+        return await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
         return None
-
-    db = await get_database()
-    return await db.users.find_one({"_id": ObjectId(user_id)})
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):

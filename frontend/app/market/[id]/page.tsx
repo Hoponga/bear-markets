@@ -25,7 +25,7 @@ function CommentsSection({ marketId, user }: { marketId: string; user: User | nu
     setCommentsLoading(true);
     marketsAPI.getComments(marketId)
       .then(setComments)
-      .catch(() => {})
+      .catch((err) => console.error('Failed to load comments:', err?.response?.status, err?.response?.data))
       .finally(() => setCommentsLoading(false));
   }, [marketId]);
 
