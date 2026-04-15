@@ -65,11 +65,8 @@ async def register(user_data: UserCreate):
             name=user_data.name,
             token_balance=1000.0,
             is_admin=False,
-<<<<<<< HEAD
-            held_balance=0.0
-=======
+            held_balance=0.0,
             is_bot=False
->>>>>>> 1fae11b86fd3b4325bf1c9e1a7855a2ec3cf14e7
         )
     }
 
@@ -104,11 +101,8 @@ async def login(user_data: UserLogin):
             name=user["name"],
             token_balance=user["token_balance"],
             is_admin=user.get("is_admin", False),
-<<<<<<< HEAD
-            held_balance=user.get("held_balance", 0.0)
-=======
+            held_balance=user.get("held_balance", 0.0),
             is_bot=user.get("is_bot", False)
->>>>>>> 1fae11b86fd3b4325bf1c9e1a7855a2ec3cf14e7
         )
     }
 
@@ -192,11 +186,8 @@ async def google_auth(request: GoogleAuthRequest):
                 name=name,
                 token_balance=token_balance,
                 is_admin=is_admin,
-<<<<<<< HEAD
-                held_balance=response_held_balance
-=======
+                held_balance=response_held_balance,
                 is_bot=False
->>>>>>> 1fae11b86fd3b4325bf1c9e1a7855a2ec3cf14e7
             )
         }
 
@@ -216,11 +207,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         name=current_user["name"],
         token_balance=current_user["token_balance"],
         is_admin=current_user.get("is_admin", False),
-<<<<<<< HEAD
-        held_balance=current_user.get("held_balance", 0.0)
-=======
+        held_balance=current_user.get("held_balance", 0.0),
         is_bot=current_user.get("is_bot", False)
->>>>>>> 1fae11b86fd3b4325bf1c9e1a7855a2ec3cf14e7
     )
 
 
@@ -249,11 +237,8 @@ async def update_profile(
         name=profile_data.name.strip(),
         token_balance=current_user["token_balance"],
         is_admin=current_user.get("is_admin", False),
-<<<<<<< HEAD
-        held_balance=current_user.get("held_balance", 0.0)
-=======
+        held_balance=current_user.get("held_balance", 0.0),
         is_bot=current_user.get("is_bot", False)
->>>>>>> 1fae11b86fd3b4325bf1c9e1a7855a2ec3cf14e7
     )
 
 

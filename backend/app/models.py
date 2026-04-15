@@ -37,11 +37,8 @@ class UserResponse(BaseModel):
     name: str
     token_balance: float
     is_admin: bool
-<<<<<<< HEAD
     held_balance: float = 0.0
-=======
     is_bot: bool = False
->>>>>>> 1fae11b86fd3b4325bf1c9e1a7855a2ec3cf14e7
 
 
 # Market Models
