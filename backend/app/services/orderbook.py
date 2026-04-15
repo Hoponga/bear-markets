@@ -64,6 +64,13 @@ async def match_buy_order(db, market_id: ObjectId, buy_order: dict, sio) -> int:
             {"$inc": {"token_balance": trade_value}}
         )
 
+        # Release held tokens for the buy order
+        if buy_order.get("tokens_held"):
+            await db.users.update_one(
+                {"_id": buy_order["user_id"]},
+                {"$inc": {"held_balance": -(buy_order["price"] * trade_quantity)}}
+            )
+
         # Transfer shares from seller to buyer
         await transfer_shares(
             db,
@@ -208,6 +215,13 @@ async def match_sell_order(db, market_id: ObjectId, sell_order: dict, sio) -> in
             {"_id": sell_order["user_id"]},
             {"$inc": {"token_balance": trade_value}}
         )
+
+        # Release held tokens for the resting buy order
+        if buy_order.get("tokens_held"):
+            await db.users.update_one(
+                {"_id": buy_order["user_id"]},
+                {"$inc": {"held_balance": -(buy_order["price"] * trade_quantity)}}
+            )
 
         # Transfer shares from seller to buyer
         await transfer_shares(

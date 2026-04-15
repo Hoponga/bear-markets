@@ -7,6 +7,7 @@ from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookRes
 from app.auth import get_current_user, get_current_admin
 from app.database import get_database
 from app.services.market_quotes import best_quotes_for_market
+from app.services.user_notifications import notify_market_resolved, notify_order_cancelled_on_resolve
 
 router = APIRouter(prefix="/api/markets", tags=["markets"])
 
@@ -239,11 +240,43 @@ async def resolve_market(
         else:
             payout = position["no_shares"] * 1.0  # Each NO share worth $1
 
-        # Credit user account
+        # Credit user account and notify
         if payout > 0:
             await db.users.update_one(
                 {"_id": user_id},
                 {"$inc": {"token_balance": payout}}
+            )
+            await notify_market_resolved(
+                db,
+                user_id,
+                market_title=market["title"],
+                outcome=resolution.outcome,
+                payout=payout,
+            )
+
+    # Release held tokens and notify users about cancelled limit orders
+    open_buy_orders = await db.orders.find({
+        "market_id": market_obj_id,
+        "order_type": "BUY",
+        "status": {"$in": ["OPEN", "PARTIAL"]},
+        "tokens_held": True
+    }).to_list(length=10000)
+
+    for buy_order in open_buy_orders:
+        unfilled = buy_order["quantity"] - buy_order.get("filled_quantity", 0)
+        if unfilled > 0:
+            refund = buy_order["price"] * unfilled
+            await db.users.update_one(
+                {"_id": buy_order["user_id"]},
+                {"$inc": {"held_balance": -refund}}
+            )
+            await notify_order_cancelled_on_resolve(
+                db,
+                buy_order["user_id"],
+                market_title=market["title"],
+                side=buy_order["side"],
+                outcome=resolution.outcome,
+                refunded_tokens=refund,
             )
 
     # Cancel all open orders for this market

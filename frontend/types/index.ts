@@ -4,6 +4,7 @@ export interface User {
   name: string;
   token_balance: number;
   is_admin: boolean;
+  held_balance: number;
 }
 
 export interface Market {

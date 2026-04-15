@@ -73,13 +73,14 @@ async def create_order(
                 detail=f"Insufficient {order_data.side} shares. You have {shares_held}, trying to sell {order_data.quantity}"
             )
 
-    # For BUY orders, check if user has enough tokens (preliminary check)
+    # For BUY orders, check if user has enough available tokens (preliminary check)
     if order_data.order_type == "BUY":
         max_cost = order_data.price * order_data.quantity
-        if current_user["token_balance"] < max_cost:
+        available = current_user["token_balance"] - current_user.get("held_balance", 0.0)
+        if available < max_cost:
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient balance. Need {max_cost} tokens, have {current_user['token_balance']}"
+                detail=f"Insufficient available balance. Need {max_cost:.2f} tokens, have {available:.2f} available ({current_user['token_balance']:.2f} total, {current_user.get('held_balance', 0.0):.2f} held)"
             )
 
     # Create the order
@@ -92,11 +93,19 @@ async def create_order(
         "quantity": order_data.quantity,
         "filled_quantity": 0,
         "status": "OPEN",
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "tokens_held": order_data.order_type == "BUY"
     }
 
     result = await db.orders.insert_one(order_dict)
     order_dict["_id"] = result.inserted_id
+
+    # Hold tokens for BUY limit orders
+    if order_data.order_type == "BUY":
+        await db.users.update_one(
+            {"_id": user_id},
+            {"$inc": {"held_balance": order_data.price * order_data.quantity}}
+        )
 
     # Try to match the order immediately
     # Step 1: For BUY orders, try share minting first
@@ -205,6 +214,15 @@ async def cancel_order(
     # Can only cancel OPEN or PARTIAL orders
     if order["status"] not in ["OPEN", "PARTIAL"]:
         raise HTTPException(status_code=400, detail="Order cannot be cancelled")
+
+    # Release held tokens for unfilled BUY orders
+    if order["order_type"] == "BUY" and order.get("tokens_held"):
+        unfilled = order["quantity"] - order.get("filled_quantity", 0)
+        if unfilled > 0:
+            await db.users.update_one(
+                {"_id": order["user_id"]},
+                {"$inc": {"held_balance": -(order["price"] * unfilled)}}
+            )
 
     # Cancel the order
     await db.orders.update_one(
@@ -555,6 +573,13 @@ async def execute_market_sell(db, market_id, user_id, side, shares_to_sell, curr
             {"_id": user_id},
             {"$inc": {"token_balance": trade_value}}
         )
+
+        # Release held tokens for resting BUY orders
+        if buy_order.get("tokens_held"):
+            await db.users.update_one(
+                {"_id": buy_order["user_id"]},
+                {"$inc": {"held_balance": -(buy_order["price"] * shares_to_trade)}}
+            )
 
         # Transfer shares
         from app.services.orderbook import transfer_shares

@@ -36,6 +36,7 @@ class UserResponse(BaseModel):
     name: str
     token_balance: float
     is_admin: bool
+    held_balance: float = 0.0
 
 
 # Market Models

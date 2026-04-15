@@ -65,17 +65,33 @@ export default function PortfolioPage() {
     );
   }
 
+  // Compute held tokens from open BUY orders
+  const heldInOrders = portfolio.open_orders
+    .filter(o => o.order_type === 'BUY')
+    .reduce((sum, o) => sum + o.price * (o.quantity - o.filled_quantity), 0);
+  const available = portfolio.token_balance - heldInOrders;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-semibold text-text-primary mb-2">Portfolio</h1>
-        <p className="text-lg text-text-muted">
-          Token Balance:{' '}
-          <span className="font-bold text-text-primary">
-            ${portfolio.token_balance.toFixed(2)}
-          </span>
-        </p>
+        <div className="flex flex-wrap gap-6 items-baseline">
+          <div>
+            <p className="text-sm text-text-muted mb-0.5">Available</p>
+            <p className="text-2xl font-bold text-text-primary">${available.toFixed(2)}</p>
+          </div>
+          {heldInOrders > 0 && (
+            <div>
+              <p className="text-sm text-text-muted mb-0.5">Held in open orders</p>
+              <p className="text-2xl font-bold text-text-disabled">${heldInOrders.toFixed(2)}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-sm text-text-muted mb-0.5">Total</p>
+            <p className="text-2xl font-bold text-text-secondary">${portfolio.token_balance.toFixed(2)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Positions */}
