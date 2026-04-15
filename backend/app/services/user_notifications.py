@@ -8,6 +8,7 @@ async def notify_limit_order_matched(
     db,
     user_id: ObjectId,
     *,
+    market_id: ObjectId,
     market_title: str,
     side: str,
     order_type: str,
@@ -28,6 +29,7 @@ async def notify_limit_order_matched(
             "message": message,
             "bet_id": None,
             "organization_id": None,
+            "market_id": market_id,
             "read": False,
             "created_at": datetime.utcnow(),
         }

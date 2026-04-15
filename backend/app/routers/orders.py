@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from typing import List
+from typing import List, Optional
 from bson import ObjectId
 from datetime import datetime
 
@@ -82,6 +82,18 @@ async def create_order(
                 detail=f"Insufficient balance. Need {max_cost} tokens, have {current_user['token_balance']}"
             )
 
+    # At most one resting limit order per user per market (OPEN or PARTIAL)
+    existing_open = await db.orders.count_documents({
+        "user_id": user_id,
+        "market_id": market_id,
+        "status": {"$in": ["OPEN", "PARTIAL"]},
+    })
+    if existing_open > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="You already have an active limit order on this market. Cancel it before placing another.",
+        )
+
     # Create the order
     order_dict = {
         "market_id": market_id,
@@ -115,7 +127,6 @@ async def create_order(
     # Update market price and emit updates
     orderbook, _ = await update_market_price(db, market_id, sio)
 
-    # Emit orderbook update via WebSocket
     if sio:
         await sio.emit('orderbook_update', {
             'market_id': str(market_id),
@@ -145,27 +156,40 @@ async def create_order(
         quantity=order_dict["quantity"],
         filled_quantity=order_dict["filled_quantity"],
         status=order_dict["status"],
-        created_at=order_dict["created_at"]
+        created_at=order_dict["created_at"],
+        market_title=market.get("title"),
     )
 
 
 @router.get("/my-orders", response_model=List[OrderResponse])
 async def get_my_orders(
     current_user: dict = Depends(get_current_user),
-    status_filter: str = None
+    status_filter: Optional[str] = None,
+    active_only: bool = False,
 ):
-    """Get user's orders"""
+    """Get user's orders. When active_only is true, only OPEN and PARTIAL orders are returned."""
     db = await get_database()
     user_id = current_user["_id"]
 
-    query = {"user_id": user_id}
-    if status_filter:
+    query: dict = {"user_id": user_id}
+    if active_only:
+        query["status"] = {"$in": ["OPEN", "PARTIAL"]}
+    elif status_filter:
         query["status"] = status_filter
 
     orders_cursor = db.orders.find(query).sort("created_at", -1)
-    orders = []
-
+    orders_raw = []
     async for order in orders_cursor:
+        orders_raw.append(order)
+
+    market_ids = list({o["market_id"] for o in orders_raw})
+    titles_by_mid: dict = {}
+    if market_ids:
+        async for m in db.markets.find({"_id": {"$in": market_ids}}, {"title": 1}):
+            titles_by_mid[m["_id"]] = m.get("title")
+
+    orders = []
+    for order in orders_raw:
         orders.append(OrderResponse(
             id=str(order["_id"]),
             market_id=str(order["market_id"]),
@@ -176,7 +200,8 @@ async def get_my_orders(
             quantity=order["quantity"],
             filled_quantity=order["filled_quantity"],
             status=order["status"],
-            created_at=order["created_at"]
+            created_at=order["created_at"],
+            market_title=titles_by_mid.get(order["market_id"]),
         ))
 
     return orders
@@ -215,10 +240,10 @@ async def cancel_order(
     # Update market price and emit updates
     orderbook, _ = await update_market_price(db, order["market_id"], sio)
 
-    # Emit orderbook update
     if sio:
+        mid = str(order["market_id"])
         await sio.emit('orderbook_update', {
-            'market_id': str(order["market_id"]),
+            'market_id': mid,
             'orderbook': {
                 'YES': {
                     'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.YES.bids],
@@ -381,7 +406,6 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
         total_spent += trade_cost
         remaining_budget -= trade_cost
 
-        # Emit trade event
         if sio:
             await sio.emit('trade_executed', {
                 'market_id': str(market_id),
@@ -395,6 +419,7 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
             await notify_limit_order_matched(
                 db,
                 sell_order["user_id"],
+                market_id=market_id,
                 market_title=market_title,
                 side=side,
                 order_type="SELL",
@@ -447,36 +472,26 @@ async def execute_market_buy(db, market_id, user_id, side, token_budget, current
                         {"$set": {"status": new_status}}
                     )
 
-    # Update orderbook snapshot
-    if sio and total_shares > 0:
-        orderbook = await get_orderbook_snapshot(market_id)
-        await sio.emit('orderbook_update', {
-            'market_id': str(market_id),
-            'orderbook': {
-                'YES': {
-                    'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.YES.bids],
-                    'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.YES.asks]
+    if total_shares > 0:
+        orderbook, _ = await update_market_price(db, market_id, sio)
+        if sio:
+            await sio.emit('orderbook_update', {
+                'market_id': str(market_id),
+                'orderbook': {
+                    'YES': {
+                        'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.YES.bids],
+                        'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.YES.asks]
+                    },
+                    'NO': {
+                        'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.NO.bids],
+                        'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.NO.asks]
+                    }
                 },
-                'NO': {
-                    'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.NO.bids],
-                    'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.NO.asks]
+                'midpoint': {
+                    'YES': orderbook.midpoint_yes,
+                    'NO': orderbook.midpoint_no
                 }
-            },
-            'midpoint': {
-                'YES': orderbook.midpoint_yes,
-                'NO': orderbook.midpoint_no
-            }
-        })
-
-        await db.markets.update_one(
-            {"_id": market_id},
-            {
-                "$set": {
-                    "current_yes_price": orderbook.midpoint_yes,
-                    "current_no_price": orderbook.midpoint_no
-                }
-            }
-        )
+            })
 
     avg_price = total_spent / total_shares if total_shares > 0 else 0
 
@@ -605,7 +620,6 @@ async def execute_market_sell(db, market_id, user_id, side, shares_to_sell, curr
         total_received += trade_value
         remaining_shares -= shares_to_trade
 
-        # Emit trade event
         if sio:
             await sio.emit('trade_executed', {
                 'market_id': str(market_id),
@@ -619,6 +633,7 @@ async def execute_market_sell(db, market_id, user_id, side, shares_to_sell, curr
             await notify_limit_order_matched(
                 db,
                 buy_order["user_id"],
+                market_id=market_id,
                 market_title=market_title,
                 side=side,
                 order_type="BUY",
@@ -627,36 +642,26 @@ async def execute_market_sell(db, market_id, user_id, side, shares_to_sell, curr
                 resting_order_complete=new_filled >= buy_order["quantity"],
             )
 
-    # Update orderbook snapshot
-    if sio and total_shares_sold > 0:
-        orderbook = await get_orderbook_snapshot(market_id)
-        await sio.emit('orderbook_update', {
-            'market_id': str(market_id),
-            'orderbook': {
-                'YES': {
-                    'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.YES.bids],
-                    'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.YES.asks]
+    if total_shares_sold > 0:
+        orderbook, _ = await update_market_price(db, market_id, sio)
+        if sio:
+            await sio.emit('orderbook_update', {
+                'market_id': str(market_id),
+                'orderbook': {
+                    'YES': {
+                        'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.YES.bids],
+                        'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.YES.asks]
+                    },
+                    'NO': {
+                        'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.NO.bids],
+                        'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.NO.asks]
+                    }
                 },
-                'NO': {
-                    'bids': [{'price': b.price, 'quantity': b.quantity} for b in orderbook.NO.bids],
-                    'asks': [{'price': a.price, 'quantity': a.quantity} for a in orderbook.NO.asks]
+                'midpoint': {
+                    'YES': orderbook.midpoint_yes,
+                    'NO': orderbook.midpoint_no
                 }
-            },
-            'midpoint': {
-                'YES': orderbook.midpoint_yes,
-                'NO': orderbook.midpoint_no
-            }
-        })
-
-        await db.markets.update_one(
-            {"_id": market_id},
-            {
-                "$set": {
-                    "current_yes_price": orderbook.midpoint_yes,
-                    "current_no_price": orderbook.midpoint_no
-                }
-            }
-        )
+            })
 
     avg_price = total_received / total_shares_sold if total_shares_sold > 0 else 0
 

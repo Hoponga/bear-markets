@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Rewrites run inside the Node server. In Docker, localhost is the frontend container — use the backend service name.
+// Browser code should keep using NEXT_PUBLIC_API_URL (localhost) for direct calls; INTERNAL_API_URL is server-only.
+const backendUrl =
+  process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const nextConfig = {
   eslint: {

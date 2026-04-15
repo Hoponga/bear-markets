@@ -4,6 +4,7 @@ export interface User {
   name: string;
   token_balance: number;
   is_admin: boolean;
+  is_bot?: boolean;
 }
 
 export interface Market {
@@ -61,6 +62,7 @@ export interface Order {
   filled_quantity: number;
   status: 'OPEN' | 'FILLED' | 'CANCELLED' | 'PARTIAL';
   created_at: string;
+  market_title?: string | null;
 }
 
 export interface Position {
@@ -137,6 +139,7 @@ export interface UserListEntry {
   email: string;
   name: string;
   is_admin: boolean;
+  is_bot?: boolean;
   token_balance: number;
 }
 
@@ -146,6 +149,28 @@ export interface UserListResponse {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+export interface BotPosition {
+  market_id: string;
+  market_title: string;
+  market_status: string;
+  yes_shares: number;
+  no_shares: number;
+  avg_yes_price: number;
+  avg_no_price: number;
+}
+
+export interface BotStatus {
+  id: string;
+  name: string;
+  email: string;
+  token_balance: number;
+  total_position_value: number;
+  positions: BotPosition[];
+  open_orders_count: number;
+  recent_trades_24h: number;
+  created_at: string;
 }
 
 export interface MarketIdea {
@@ -223,6 +248,7 @@ export interface Notification {
   message: string;
   bet_id?: string;
   organization_id?: string;
+  market_id?: string;
   read: boolean;
   created_at: string;
 }

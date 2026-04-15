@@ -27,7 +27,8 @@ class UserCreate(BaseModel):
     name: str
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    # str (not EmailStr): dev seeds use *.local; email-validator rejects those TLDs
+    email: str = Field(..., min_length=1)
     password: str
 
 class UserResponse(BaseModel):
@@ -36,6 +37,7 @@ class UserResponse(BaseModel):
     name: str
     token_balance: float
     is_admin: bool
+    is_bot: bool = False
 
 
 # Market Models
@@ -110,6 +112,7 @@ class OrderResponse(BaseModel):
     filled_quantity: int
     status: Literal["OPEN", "FILLED", "CANCELLED", "PARTIAL"]
     created_at: datetime
+    market_title: Optional[str] = None
 
 
 # Trade Models
@@ -184,6 +187,7 @@ class UserListEntry(BaseModel):
     email: str
     name: str
     is_admin: bool
+    is_bot: bool = False
     token_balance: float
 
 
@@ -330,6 +334,7 @@ class NotificationResponse(BaseModel):
     message: str
     bet_id: Optional[str] = None
     organization_id: Optional[str] = None
+    market_id: Optional[str] = None
     read: bool
     created_at: datetime
 

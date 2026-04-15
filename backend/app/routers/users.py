@@ -64,7 +64,8 @@ async def register(user_data: UserCreate):
             email=user_data.email,
             name=user_data.name,
             token_balance=1000.0,
-            is_admin=False
+            is_admin=False,
+            is_bot=False
         )
     }
 
@@ -98,7 +99,8 @@ async def login(user_data: UserLogin):
             email=user["email"],
             name=user["name"],
             token_balance=user["token_balance"],
-            is_admin=user.get("is_admin", False)
+            is_admin=user.get("is_admin", False),
+            is_bot=user.get("is_bot", False)
         )
     }
 
@@ -175,7 +177,8 @@ async def google_auth(request: GoogleAuthRequest):
                 email=email,
                 name=name,
                 token_balance=token_balance,
-                is_admin=is_admin
+                is_admin=is_admin,
+                is_bot=False
             )
         }
 
@@ -194,7 +197,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         email=current_user["email"],
         name=current_user["name"],
         token_balance=current_user["token_balance"],
-        is_admin=current_user.get("is_admin", False)
+        is_admin=current_user.get("is_admin", False),
+        is_bot=current_user.get("is_bot", False)
     )
 
 
@@ -222,7 +226,8 @@ async def update_profile(
         email=current_user["email"],
         name=profile_data.name.strip(),
         token_balance=current_user["token_balance"],
-        is_admin=current_user.get("is_admin", False)
+        is_admin=current_user.get("is_admin", False),
+        is_bot=current_user.get("is_bot", False)
     )
 
 
@@ -289,8 +294,18 @@ async def get_portfolio(current_user: dict = Depends(get_current_user)):
         "status": {"$in": ["OPEN", "PARTIAL"]}
     }).sort("created_at", -1)
 
-    open_orders = []
+    open_orders_raw = []
     async for order in orders_cursor:
+        open_orders_raw.append(order)
+
+    market_ids = list({o["market_id"] for o in open_orders_raw})
+    titles_by_mid = {}
+    if market_ids:
+        async for m in db.markets.find({"_id": {"$in": market_ids}}, {"title": 1}):
+            titles_by_mid[m["_id"]] = m.get("title")
+
+    open_orders = []
+    for order in open_orders_raw:
         open_orders.append(OrderResponse(
             id=str(order["_id"]),
             market_id=str(order["market_id"]),
@@ -301,7 +316,8 @@ async def get_portfolio(current_user: dict = Depends(get_current_user)):
             quantity=order["quantity"],
             filled_quantity=order["filled_quantity"],
             status=order["status"],
-            created_at=order["created_at"]
+            created_at=order["created_at"],
+            market_title=titles_by_mid.get(order["market_id"]),
         ))
 
     return PortfolioResponse(
@@ -324,14 +340,23 @@ async def get_leaderboard(page: int = 1, page_size: int = 10):
     if page_size > 100:
         page_size = 100
 
-    # Get total count
-    total = await db.users.count_documents({})
+    # Get total count (excluding bots and admins)
+    total = await db.users.count_documents(
+        {"is_bot": {"$ne": True}, "is_admin": {"$ne": True}}
+    )
 
     # Calculate skip value
     skip = (page - 1) * page_size
 
     # Aggregation pipeline to calculate total portfolio value
     pipeline = [
+        # Filter out bots and admins (public leaderboard)
+        {
+            "$match": {
+                "is_bot": {"$ne": True},
+                "is_admin": {"$ne": True},
+            }
+        },
         # Lookup positions for each user
         {
             "$lookup": {
@@ -443,6 +468,7 @@ async def get_leaderboard(page: int = 1, page_size: int = 10):
 async def list_users(
     page: int = 1,
     page_size: int = 20,
+    include_bots: bool = False,
     current_user: dict = Depends(get_current_admin)
 ):
     """List all users (admin only)"""
@@ -456,10 +482,13 @@ async def list_users(
     if page_size > 100:
         page_size = 100
 
-    total = await db.users.count_documents({})
+    # Build query - optionally filter out bots
+    query = {} if include_bots else {"is_bot": {"$ne": True}}
+
+    total = await db.users.count_documents(query)
     skip = (page - 1) * page_size
 
-    cursor = db.users.find({}).sort("created_at", -1).skip(skip).limit(page_size)
+    cursor = db.users.find(query).sort("created_at", -1).skip(skip).limit(page_size)
 
     users = []
     async for user in cursor:
@@ -468,6 +497,7 @@ async def list_users(
             email=user["email"],
             name=user["name"],
             is_admin=user.get("is_admin", False),
+            is_bot=user.get("is_bot", False),
             token_balance=user["token_balance"]
         ))
 
@@ -539,6 +569,72 @@ async def remove_admin(
     )
 
     return {"message": f"{request.email} is no longer an admin"}
+
+
+@router.get("/bots")
+async def get_bot_accounts(
+    current_user: dict = Depends(get_current_admin)
+):
+    """Get all bot accounts with their status (admin only)"""
+    db = await get_database()
+
+    # Find all bot accounts
+    bots_cursor = db.users.find({"is_bot": True})
+    bots = []
+
+    async for bot in bots_cursor:
+        bot_id = bot["_id"]
+
+        # Get bot's positions
+        positions_cursor = db.positions.find({"user_id": bot_id})
+        positions = []
+        total_position_value = 0.0
+
+        async for pos in positions_cursor:
+            market = await db.markets.find_one({"_id": pos["market_id"]})
+            market_title = market["title"] if market else "Unknown Market"
+            market_status = market["status"] if market else "unknown"
+
+            yes_value = pos.get("yes_shares", 0) * pos.get("avg_yes_price", 0.5)
+            no_value = pos.get("no_shares", 0) * pos.get("avg_no_price", 0.5)
+
+            positions.append({
+                "market_id": str(pos["market_id"]),
+                "market_title": market_title,
+                "market_status": market_status,
+                "yes_shares": pos.get("yes_shares", 0),
+                "no_shares": pos.get("no_shares", 0),
+                "avg_yes_price": pos.get("avg_yes_price", 0),
+                "avg_no_price": pos.get("avg_no_price", 0),
+            })
+            total_position_value += yes_value + no_value
+
+        # Get bot's open orders count
+        open_orders_count = await db.orders.count_documents({
+            "user_id": bot_id,
+            "status": {"$in": ["OPEN", "PARTIAL"]}
+        })
+
+        # Get bot's recent trades count (last 24 hours)
+        from datetime import timedelta
+        recent_trades_count = await db.trades.count_documents({
+            "$or": [{"buyer_id": bot_id}, {"seller_id": bot_id}],
+            "executed_at": {"$gte": datetime.utcnow() - timedelta(hours=24)}
+        })
+
+        bots.append({
+            "id": str(bot_id),
+            "name": bot["name"],
+            "email": bot["email"],
+            "token_balance": bot["token_balance"],
+            "total_position_value": total_position_value,
+            "positions": positions,
+            "open_orders_count": open_orders_count,
+            "recent_trades_24h": recent_trades_count,
+            "created_at": bot.get("created_at", datetime.utcnow()).isoformat()
+        })
+
+    return {"bots": bots}
 
 
 # Market Ideas Endpoints

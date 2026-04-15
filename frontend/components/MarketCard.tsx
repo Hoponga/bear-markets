@@ -15,7 +15,6 @@ export default function MarketCard({ market }: MarketCardProps) {
   return (
     <Link href={`/market/${market.id}`}>
       <div className="bg-bg-card rounded-lg transition border border-border-primary p-6 cursor-pointer hover:border-border-secondary overflow-visible">
-        {/* Title */}
         <h3 className="text-lg font-semibold text-text-primary mb-3 line-clamp-2">
           {market.title}
         </h3>
@@ -33,12 +32,10 @@ export default function MarketCard({ market }: MarketCardProps) {
           </div>
         )}
 
-        {/* Description */}
         <p className="text-sm text-text-muted mb-4 line-clamp-2">
           {market.description}
         </p>
 
-        {/* Prices — hover YES/NO for bid/ask */}
         <div className="grid grid-cols-2 gap-3 mb-4 overflow-visible">
           <OrderBookTooltip market={market} side="YES">
             <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3">
@@ -54,7 +51,6 @@ export default function MarketCard({ market }: MarketCardProps) {
           </OrderBookTooltip>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-between items-center text-xs text-text-disabled">
           <span>Volume: ${market.total_volume.toFixed(0)}</span>
           <span className={market.status === 'active' ? 'text-green-400' : 'text-text-disabled'}>

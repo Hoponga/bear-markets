@@ -65,10 +65,3 @@ async def unsubscribe_market(sid, data):
         room_name = f"market_{market_id}"
         await sio.leave_room(sid, room_name)
         print(f"Client {sid} unsubscribed from market {market_id}")
-
-
-# Helper function to broadcast to market room
-async def broadcast_to_market(market_id: str, event: str, data: dict):
-    """Broadcast an event to all clients subscribed to a market"""
-    room_name = f"market_{market_id}"
-    await sio.emit(event, data, room=room_name)

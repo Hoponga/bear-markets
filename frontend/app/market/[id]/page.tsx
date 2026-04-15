@@ -6,6 +6,7 @@ import { marketsAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
 import OrderBook from '@/components/OrderBook';
 import TradeInterface from '@/components/TradeInterface';
+import ActiveLimitOrders from '@/components/ActiveLimitOrders';
 import PriceChart from '@/components/PriceChart';
 import OrderBookTooltip from '@/components/OrderBookTooltip';
 import type { Market, User } from '@/types';
@@ -17,6 +18,7 @@ export default function MarketDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState<User | null>(null);
+  const [limitOrdersTick, setLimitOrdersTick] = useState(0);
 
   useEffect(() => {
     loadMarket();
@@ -105,7 +107,6 @@ export default function MarketDetailPage() {
             </span>
           </div>
 
-          {/* Price History */}
           <div className="mb-8">
             <PriceChart marketId={marketId} />
           </div>
@@ -126,9 +127,19 @@ export default function MarketDetailPage() {
           )}
         </div>
 
-        {/* Right column - Place Order (card) */}
-        <div className="lg:col-span-1">
-          <TradeInterface marketId={marketId} onOrderPlaced={loadMarket} />
+        {/* Right column - open orders & place order */}
+        <div className="lg:col-span-1 space-y-6">
+          <ActiveLimitOrders
+            marketId={marketId}
+            refreshKey={limitOrdersTick}
+          />
+          <TradeInterface
+            marketId={marketId}
+            onOrderPlaced={() => {
+              loadMarket();
+              setLimitOrdersTick((t) => t + 1);
+            }}
+          />
         </div>
       </div>
     </div>

@@ -48,39 +48,6 @@ async def list_markets(status_filter: str = "active"):
     return markets
 
 
-@router.get("/{market_id}", response_model=MarketResponse)
-async def get_market(market_id: str):
-    """Get market details"""
-    db = await get_database()
-
-    if not ObjectId.is_valid(market_id):
-        raise HTTPException(status_code=400, detail="Invalid market ID")
-
-    market = await db.markets.find_one({"_id": ObjectId(market_id)})
-
-    if not market:
-        raise HTTPException(status_code=404, detail="Market not found")
-
-    yb, ya, nb, na = await best_quotes_for_market(market["_id"], market["status"])
-    return MarketResponse(
-        id=str(market["_id"]),
-        title=market["title"],
-        description=market["description"],
-        created_at=market["created_at"],
-        resolution_date=market["resolution_date"],
-        status=market["status"],
-        resolved_outcome=market.get("resolved_outcome"),
-        current_yes_price=market.get("current_yes_price", 0.5),
-        current_no_price=market.get("current_no_price", 0.5),
-        total_volume=market.get("total_volume", 0.0),
-        organization_id=str(market["organization_id"]) if market.get("organization_id") else None,
-        yes_best_bid=yb,
-        yes_best_ask=ya,
-        no_best_bid=nb,
-        no_best_ask=na,
-    )
-
-
 @router.get("/{market_id}/orderbook", response_model=OrderbookResponse)
 async def get_orderbook(market_id: str):
     """Get current orderbook for a market"""
@@ -143,6 +110,39 @@ async def get_price_history(market_id: str, limit: int = 500):
         "current_yes_price": market.get("current_yes_price", 0.5),
         "current_no_price": market.get("current_no_price", 0.5)
     }
+
+
+@router.get("/{market_id}", response_model=MarketResponse)
+async def get_market(market_id: str):
+    """Get market details"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(market_id):
+        raise HTTPException(status_code=400, detail="Invalid market ID")
+
+    market = await db.markets.find_one({"_id": ObjectId(market_id)})
+
+    if not market:
+        raise HTTPException(status_code=404, detail="Market not found")
+
+    yb, ya, nb, na = await best_quotes_for_market(market["_id"], market["status"])
+    return MarketResponse(
+        id=str(market["_id"]),
+        title=market["title"],
+        description=market["description"],
+        created_at=market["created_at"],
+        resolution_date=market["resolution_date"],
+        status=market["status"],
+        resolved_outcome=market.get("resolved_outcome"),
+        current_yes_price=market.get("current_yes_price", 0.5),
+        current_no_price=market.get("current_no_price", 0.5),
+        total_volume=market.get("total_volume", 0.0),
+        organization_id=str(market["organization_id"]) if market.get("organization_id") else None,
+        yes_best_bid=yb,
+        yes_best_ask=ya,
+        no_best_bid=nb,
+        no_best_ask=na,
+    )
 
 
 @router.post("", response_model=MarketResponse)

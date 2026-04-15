@@ -107,7 +107,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
           <p className="text-xs text-text-disabled mt-1">
             {executionType === 'MARKET'
               ? 'Execute immediately at best available prices'
-              : 'Set your own price, order waits until matched'}
+              : 'Set your own price, order waits until matched. One active limit order per market—cancel an open order to place another.'}
           </p>
         </div>
 
