@@ -58,8 +58,8 @@ function CommentsSection({
             <div key={c.id} className="flex gap-3">
               <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded h-fit mt-0.5 ${
                 c.user_side === 'YES'
-                  ? 'bg-green-900/40 text-green-400'
-                  : 'bg-red-900/40 text-red-400'
+                  ? 'bg-emerald-900/40 text-emerald-400'
+                  : 'bg-rose-900/40 text-rose-400'
               }`}>
                 {c.user_side}
               </span>
@@ -80,7 +80,7 @@ function CommentsSection({
         <form onSubmit={handleSubmit} className="space-y-2">
           <div className="flex gap-2 items-start">
             <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded mt-1 ${
-              userBet.side === 'YES' ? 'bg-green-900/40 text-green-400' : 'bg-red-900/40 text-red-400'
+              userBet.side === 'YES' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-rose-900/40 text-rose-400'
             }`}>
               {userBet.side}
             </span>
@@ -152,11 +152,11 @@ function BetForm({
         <label className="block text-sm font-medium text-text-secondary mb-2">Side</label>
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={() => setSide('YES')}
-            className={`py-2 px-4 rounded-lg font-medium transition ${side === 'YES' ? 'bg-green-600 text-white' : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'}`}>
+            className={`py-2 px-4 rounded-lg font-medium transition ${side === 'YES' ? 'bg-emerald-700 text-white' : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'}`}>
             YES
           </button>
           <button type="button" onClick={() => setSide('NO')}
-            className={`py-2 px-4 rounded-lg font-medium transition ${side === 'NO' ? 'bg-red-600 text-white' : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'}`}>
+            className={`py-2 px-4 rounded-lg font-medium transition ${side === 'NO' ? 'bg-rose-700 text-white' : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'}`}>
             NO
           </button>
         </div>
@@ -196,7 +196,7 @@ function JoinBetCard({ bet, orgId, onJoined }: { bet: PoolBet; orgId: string; on
     return (
       <div>
         <h3 className="text-lg font-semibold text-text-primary mb-3">Your Bet</h3>
-        <p className={`text-4xl font-bold ${bet.user_bet.side === 'YES' ? 'text-green-400' : 'text-red-400'}`}>
+        <p className={`text-4xl font-bold ${bet.user_bet.side === 'YES' ? 'text-emerald-400' : 'text-rose-400'}`}>
           {bet.user_bet.side} · {bet.user_bet.amount}
           <span className="text-sm font-normal text-text-disabled ml-2">tokens</span>
         </p>
@@ -373,7 +373,7 @@ export default function BetDetailPage() {
             <span>{bet.bet_type === 'fixed' ? `${bet.fixed_fee} tokens/entry` : `min ${bet.min_fee} tokens`}</span>
             <span>Created: {formatDate(bet.created_at)}</span>
             <span className={
-              bet.status === 'open' ? 'text-green-400'
+              bet.status === 'open' ? 'text-emerald-400'
               : bet.status === 'locked' ? 'text-yellow-400'
               : 'text-text-disabled'
             }>
@@ -386,8 +386,8 @@ export default function BetDetailPage() {
           {/* YES / NO distribution bars */}
           <div className="space-y-2 mb-8">
             {[
-              { label: 'YES', pct: yesPct, color: 'bg-green-500', text: 'text-green-400' },
-              { label: 'NO',  pct: 100 - yesPct, color: 'bg-red-500', text: 'text-red-400' },
+              { label: 'YES', pct: yesPct, color: 'bg-emerald-600', text: 'text-emerald-400' },
+              { label: 'NO',  pct: 100 - yesPct, color: 'bg-rose-600', text: 'text-rose-400' },
             ].map(({ label, pct, color, text }) => (
               <div key={label} className="flex items-center gap-3">
                 <span className={`text-sm font-bold w-7 shrink-0 ${text}`}>{label}</span>
@@ -462,13 +462,13 @@ export default function BetDetailPage() {
                   <>
                     <button
                       onClick={() => handleResolve('YES')}
-                      className="w-full py-2 border border-green-700 text-green-400 text-sm rounded-lg hover:bg-green-900/30 transition"
+                      className="w-full py-2 border border-emerald-700 text-emerald-400 text-sm rounded-lg hover:bg-emerald-900/30 transition"
                     >
                       Resolve YES
                     </button>
                     <button
                       onClick={() => handleResolve('NO')}
-                      className="w-full py-2 border border-red-700 text-red-400 text-sm rounded-lg hover:bg-red-900/30 transition"
+                      className="w-full py-2 border border-rose-700 text-rose-400 text-sm rounded-lg hover:bg-rose-900/30 transition"
                     >
                       Resolve NO
                     </button>
@@ -510,8 +510,8 @@ export default function BetDetailPage() {
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
                         entry.side === 'YES'
-                          ? 'bg-green-900/40 text-green-400'
-                          : 'bg-red-900/40 text-red-400'
+                          ? 'bg-emerald-900/40 text-emerald-400'
+                          : 'bg-rose-900/40 text-rose-400'
                       }`}>
                         {entry.side}
                       </span>

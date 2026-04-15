@@ -2,7 +2,7 @@
 
 # UC Berkeley Prediction Markets - Production Deployment Script
 
-echo "🚀 Deploying Berkeley Markets..."
+echo "🚀 Deploying Bearmarket..."
 
 # Update system
 sudo apt-get update
@@ -20,7 +20,7 @@ npm run build
 # Setup systemd service for backend
 sudo tee /etc/systemd/system/markets-backend.service > /dev/null <<EOF
 [Unit]
-Description=Berkeley Markets Backend
+Description=Bearmarket Backend
 After=network.target
 
 [Service]
@@ -38,7 +38,7 @@ EOF
 # Setup systemd service for frontend
 sudo tee /etc/systemd/system/markets-frontend.service > /dev/null <<EOF
 [Unit]
-Description=Berkeley Markets Frontend
+Description=Bearmarket Frontend
 After=network.target
 
 [Service]
