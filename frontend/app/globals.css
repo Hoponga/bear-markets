@@ -18,6 +18,7 @@
   --btn-primary-hover: #6b7280;
   --btn-secondary:     #374151;
   --btn-secondary-hover: #4b5563;
+  --btn-toggle-selected: #4c1d95;
   --error-bg:          rgba(127, 29, 29, 0.35);
   --error-border:      #991b1b;
   --error-text:        #fca5a5;
@@ -27,6 +28,16 @@
   --navbar-border:     rgba(255, 255, 255, 0.15);
   --foreground: 255, 255, 255;
   --background: 17, 24, 39;
+  --pred-yes: #6ee7b7;
+  --pred-yes-surface: rgba(16, 185, 129, 0.22);
+  --pred-yes-ring: rgba(52, 211, 153, 0.55);
+  --pred-yes-btn: #22c55e;
+  --pred-yes-btn-hover: #16a34a;
+  --pred-no: #fca5a5;
+  --pred-no-surface: rgba(248, 113, 113, 0.18);
+  --pred-no-ring: rgba(252, 165, 165, 0.55);
+  --pred-no-btn: #ef4444;
+  --pred-no-btn-hover: #dc2626;
 }
 
 /* System preference (only when no manual override is set) */
@@ -46,6 +57,7 @@
     --btn-primary-hover: #d1d5db;
     --btn-secondary:     #f3f4f6;
     --btn-secondary-hover: #e5e7eb;
+    --btn-toggle-selected: #c4b5fd;
     --error-bg:          #fef2f2;
     --error-border:      #fca5a5;
     --error-text:        #b91c1c;
@@ -55,6 +67,17 @@
     --navbar-border:     rgba(0, 0, 0, 0.1);
     --foreground: 17, 24, 39;
     --background: 249, 250, 251;
+    /* YES / NO (light UI — strong contrast on white cards) */
+    --pred-yes: #047857;
+    --pred-yes-surface: #d1fae5;
+    --pred-yes-ring: #10b981;
+    --pred-yes-btn: #059669;
+    --pred-yes-btn-hover: #047857;
+    --pred-no: #991b1b;
+    --pred-no-surface: #fee2e2;
+    --pred-no-ring: #f87171;
+    --pred-no-btn: #dc2626;
+    --pred-no-btn-hover: #b91c1c;
   }
 }
 
@@ -74,6 +97,7 @@
   --btn-primary-hover: #d1d5db;
   --btn-secondary:     #f3f4f6;
   --btn-secondary-hover: #e5e7eb;
+  --btn-toggle-selected: #c4b5fd;
   --error-bg:          #fef2f2;
   --error-border:      #fca5a5;
   --error-text:        #b91c1c;
@@ -83,6 +107,16 @@
   --navbar-border:     rgba(0, 0, 0, 0.1);
   --foreground: 17, 24, 39;
   --background: 255, 255, 255;
+  --pred-yes: #047857;
+  --pred-yes-surface: #d1fae5;
+  --pred-yes-ring: #10b981;
+  --pred-yes-btn: #059669;
+  --pred-yes-btn-hover: #047857;
+  --pred-no: #991b1b;
+  --pred-no-surface: #fee2e2;
+  --pred-no-ring: #f87171;
+  --pred-no-btn: #dc2626;
+  --pred-no-btn-hover: #b91c1c;
 }
 
 [data-theme="dark"] {
@@ -100,6 +134,7 @@
   --btn-primary-hover: #6b7280;
   --btn-secondary:     #374151;
   --btn-secondary-hover: #4b5563;
+  --btn-toggle-selected: #4c1d95;
   --error-bg:          rgba(127, 29, 29, 0.35);
   --error-border:      #991b1b;
   --error-text:        #fca5a5;
@@ -109,6 +144,145 @@
   --navbar-border:     rgba(255, 255, 255, 0.15);
   --foreground: 255, 255, 255;
   --background: 17, 24, 39;
+  --pred-yes: #6ee7b7;
+  --pred-yes-surface: rgba(16, 185, 129, 0.22);
+  --pred-yes-ring: rgba(52, 211, 153, 0.55);
+  --pred-yes-btn: #22c55e;
+  --pred-yes-btn-hover: #16a34a;
+  --pred-no: #fca5a5;
+  --pred-no-surface: rgba(248, 113, 113, 0.18);
+  --pred-no-ring: rgba(252, 165, 165, 0.55);
+  --pred-no-btn: #ef4444;
+  --pred-no-btn-hover: #dc2626;
+}
+
+/* YES/NO: html-scoped literals beat .text-pred-* alone (e.g. Link uses color: inherit). */
+html[data-theme="dark"] .text-pred-yes {
+  color: #6ee7b7;
+}
+html[data-theme="dark"] .text-pred-no {
+  color: #fca5a5;
+}
+html[data-theme="dark"] .bg-pred-yes-surface {
+  background-color: rgba(16, 185, 129, 0.22);
+}
+html[data-theme="dark"] .bg-pred-no-surface {
+  background-color: rgba(248, 113, 113, 0.18);
+}
+html[data-theme="dark"] .border-pred-yes-ring {
+  border-color: rgba(52, 211, 153, 0.55);
+}
+html[data-theme="dark"] .border-pred-no-ring {
+  border-color: rgba(252, 165, 165, 0.55);
+}
+html[data-theme="dark"] .bg-pred-yes-btn {
+  background-color: #22c55e;
+}
+html[data-theme="dark"] .bg-pred-no-btn {
+  background-color: #ef4444;
+}
+html[data-theme="dark"] .hover\:bg-pred-yes-btn-hover:hover {
+  background-color: #16a34a;
+}
+html[data-theme="dark"] .hover\:bg-pred-no-btn-hover:hover {
+  background-color: #dc2626;
+}
+
+html[data-theme="light"] .text-pred-yes {
+  color: #047857;
+}
+html[data-theme="light"] .text-pred-no {
+  color: #991b1b;
+}
+html[data-theme="light"] .bg-pred-yes-surface {
+  background-color: #d1fae5;
+}
+html[data-theme="light"] .bg-pred-no-surface {
+  background-color: #fee2e2;
+}
+html[data-theme="light"] .border-pred-yes-ring {
+  border-color: #10b981;
+}
+html[data-theme="light"] .border-pred-no-ring {
+  border-color: #f87171;
+}
+html[data-theme="light"] .bg-pred-yes-btn {
+  background-color: #059669;
+}
+html[data-theme="light"] .bg-pred-no-btn {
+  background-color: #dc2626;
+}
+html[data-theme="light"] .hover\:bg-pred-yes-btn-hover:hover {
+  background-color: #047857;
+}
+html[data-theme="light"] .hover\:bg-pred-no-btn-hover:hover {
+  background-color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .text-pred-yes {
+    color: #6ee7b7;
+  }
+  html:not([data-theme]) .text-pred-no {
+    color: #fca5a5;
+  }
+  html:not([data-theme]) .bg-pred-yes-surface {
+    background-color: rgba(16, 185, 129, 0.22);
+  }
+  html:not([data-theme]) .bg-pred-no-surface {
+    background-color: rgba(248, 113, 113, 0.18);
+  }
+  html:not([data-theme]) .border-pred-yes-ring {
+    border-color: rgba(52, 211, 153, 0.55);
+  }
+  html:not([data-theme]) .border-pred-no-ring {
+    border-color: rgba(252, 165, 165, 0.55);
+  }
+  html:not([data-theme]) .bg-pred-yes-btn {
+    background-color: #22c55e;
+  }
+  html:not([data-theme]) .bg-pred-no-btn {
+    background-color: #ef4444;
+  }
+  html:not([data-theme]) .hover\:bg-pred-yes-btn-hover:hover {
+    background-color: #16a34a;
+  }
+  html:not([data-theme]) .hover\:bg-pred-no-btn-hover:hover {
+    background-color: #dc2626;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) .text-pred-yes {
+    color: #047857;
+  }
+  html:not([data-theme]) .text-pred-no {
+    color: #991b1b;
+  }
+  html:not([data-theme]) .bg-pred-yes-surface {
+    background-color: #d1fae5;
+  }
+  html:not([data-theme]) .bg-pred-no-surface {
+    background-color: #fee2e2;
+  }
+  html:not([data-theme]) .border-pred-yes-ring {
+    border-color: #10b981;
+  }
+  html:not([data-theme]) .border-pred-no-ring {
+    border-color: #f87171;
+  }
+  html:not([data-theme]) .bg-pred-yes-btn {
+    background-color: #059669;
+  }
+  html:not([data-theme]) .bg-pred-no-btn {
+    background-color: #dc2626;
+  }
+  html:not([data-theme]) .hover\:bg-pred-yes-btn-hover:hover {
+    background-color: #047857;
+  }
+  html:not([data-theme]) .hover\:bg-pred-no-btn-hover:hover {
+    background-color: #b91c1c;
+  }
 }
 
 body {

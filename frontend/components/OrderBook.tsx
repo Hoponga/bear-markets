@@ -33,7 +33,7 @@ export default function OrderBook({ marketId, side }: OrderBookProps) {
       key={`${type}-${level.price}`}
       className="grid grid-cols-2 py-2 px-3 hover:bg-bg-hover"
     >
-      <span className={`font-medium ${type === 'bid' ? 'text-green-400' : 'text-red-400'}`}>
+      <span className={`font-medium ${type === 'bid' ? 'text-pred-yes' : 'text-pred-no'}`}>
         ${level.price.toFixed(2)}
       </span>
       <span className="text-text-secondary text-right">{level.quantity}</span>

@@ -86,7 +86,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setExecutionType('LIMIT')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 executionType === 'LIMIT'
-                  ? 'bg-accent-purple text-text-primary'
+                  ? 'bg-btn-toggle-selected text-text-primary'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >
@@ -97,7 +97,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setExecutionType('MARKET')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 executionType === 'MARKET'
-                  ? 'bg-accent-purple text-text-primary'
+                  ? 'bg-btn-toggle-selected text-text-primary'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >
@@ -107,11 +107,10 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
           <p className="text-xs text-text-disabled mt-1">
             {executionType === 'MARKET'
               ? 'Execute immediately at best available prices'
-              : 'Set your own price, order waits until matched. One active limit order per market—cancel an open order to place another.'}
+              : 'Set your own price, order waits until matched. You can have up to four active limits per market (YES/NO × buy/sell)—cancel one on that side and action to place another.'}
           </p>
         </div>
 
-        {/* Side Selection - Keep green/red */}
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-2">Side</label>
           <div className="grid grid-cols-2 gap-2">
@@ -120,7 +119,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setSide('YES')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 side === 'YES'
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-pred-yes-btn text-white hover:bg-pred-yes-btn-hover'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >
@@ -131,7 +130,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setSide('NO')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 side === 'NO'
-                  ? 'bg-red-600 text-white'
+                  ? 'bg-pred-no-btn text-white hover:bg-pred-no-btn-hover'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >
@@ -149,7 +148,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setOrderType('BUY')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 orderType === 'BUY'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-btn-toggle-selected text-text-primary'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >
@@ -160,7 +159,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               onClick={() => setOrderType('SELL')}
               className={`py-2 px-4 rounded-lg font-medium transition ${
                 orderType === 'SELL'
-                  ? 'bg-orange-600 text-white'
+                  ? 'bg-btn-toggle-selected text-text-primary'
                   : 'bg-btn-secondary text-text-secondary hover:bg-btn-secondary-hover'
               }`}
             >

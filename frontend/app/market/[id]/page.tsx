@@ -56,8 +56,8 @@ function CommentsSection({ marketId, user }: { marketId: string; user: User | nu
             <div key={c.id} className="flex gap-3">
               <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded h-fit mt-0.5 ${
                 c.user_side === 'YES'
-                  ? 'bg-emerald-900/40 text-emerald-400'
-                  : 'bg-rose-900/40 text-rose-400'
+                  ? 'bg-pred-yes-surface text-pred-yes'
+                  : 'bg-pred-no-surface text-pred-no'
               }`}>
                 {c.user_side}
               </span>
@@ -177,15 +177,15 @@ export default function MarketDetailPage() {
           {/* Current Prices — hover YES/NO for bid/ask */}
           <div className="grid grid-cols-2 gap-6 max-w-md mb-6 overflow-visible">
             <OrderBookTooltip market={market} side="YES" keyboardFocus>
-              <div className="bg-green-900/30 rounded-lg p-4 border-2 border-green-700/50">
-                <p className="text-sm text-green-400 font-medium mb-1">YES</p>
-                <p className="text-4xl font-bold text-green-400">{yesPrice}¢</p>
+              <div className="bg-pred-yes-surface rounded-lg p-4 border-2 border-pred-yes-ring">
+                <p className="text-sm text-pred-yes font-medium mb-1">YES</p>
+                <p className="text-4xl font-bold text-pred-yes">{yesPrice}¢</p>
               </div>
             </OrderBookTooltip>
             <OrderBookTooltip market={market} side="NO" keyboardFocus>
-              <div className="bg-red-900/30 rounded-lg p-4 border-2 border-red-700/50">
-                <p className="text-sm text-red-400 font-medium mb-1">NO</p>
-                <p className="text-4xl font-bold text-red-400">{noPrice}¢</p>
+              <div className="bg-pred-no-surface rounded-lg p-4 border-2 border-pred-no-ring">
+                <p className="text-sm text-pred-no font-medium mb-1">NO</p>
+                <p className="text-4xl font-bold text-pred-no">{noPrice}¢</p>
               </div>
             </OrderBookTooltip>
           </div>
@@ -194,7 +194,7 @@ export default function MarketDetailPage() {
           <div className="flex space-x-6 text-sm text-text-disabled mb-8">
             <span>Volume: ${market.total_volume.toFixed(0)}</span>
             <span>Closes: {formatDate(market.resolution_date)}</span>
-            <span className={market.status === 'active' ? 'text-green-400' : 'text-text-disabled'}>
+            <span className={market.status === 'active' ? 'text-success' : 'text-text-disabled'}>
               {market.status === 'active' ? '● Active' : '○ Resolved'}
             </span>
           </div>

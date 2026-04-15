@@ -149,9 +149,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="mb-10">
-        <ActiveLimitOrders showMarketLink />
-      </div>
+      <ActiveLimitOrders showMarketLink className="mb-10" />
 
       {/* Danger Zone */}
       <div className="bg-bg-card rounded-lg border border-red-500/30 p-6">

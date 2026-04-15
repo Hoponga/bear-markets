@@ -362,13 +362,13 @@ export default function AdminPage() {
                             <>
                               <button
                                 onClick={() => handleResolveMarket(market.id, 'YES')}
-                                className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-600 transition"
+                                className="px-3 py-1 bg-pred-yes-btn text-white rounded hover:bg-pred-yes-btn-hover transition"
                               >
                                 Resolve YES
                               </button>
                               <button
                                 onClick={() => handleResolveMarket(market.id, 'NO')}
-                                className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-600 transition"
+                                className="px-3 py-1 bg-pred-no-btn text-white rounded hover:bg-pred-no-btn-hover transition"
                               >
                                 Resolve NO
                               </button>

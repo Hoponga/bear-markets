@@ -14,6 +14,8 @@ interface ActiveLimitOrdersProps {
   refreshKey?: number;
   /** When true, show a link to the market for each row (profile / multi-market view) */
   showMarketLink?: boolean;
+  /** Extra classes on the card when visible (e.g. profile spacing) */
+  className?: string;
 }
 
 function isActiveOrder(o: Order) {
@@ -24,6 +26,7 @@ export default function ActiveLimitOrders({
   marketId,
   refreshKey = 0,
   showMarketLink = false,
+  className = '',
 }: ActiveLimitOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,64 +75,61 @@ export default function ActiveLimitOrders({
     }
   };
 
-  if (!userId) {
+  if (!userId || orders.length === 0) {
     return null;
   }
 
   return (
-    <div className="bg-bg-card rounded-lg border border-border-primary p-6">
+    <div
+      className={`bg-bg-card rounded-lg border border-border-primary p-6 ${className}`.trim()}
+    >
       <h3 className="text-lg font-semibold text-text-primary mb-1">Open limit orders</h3>
       <p className="text-xs text-text-muted mb-4">
-        You can have one active limit order per market. Cancel an order to place another.
+        Up to four resting limits per market: one each for YES buy, YES sell, NO buy, and NO sell.
+        Cancel an order to replace it on that side and action.
       </p>
 
-      {loading ? (
-        <p className="text-sm text-text-muted">Loading…</p>
-      ) : orders.length === 0 ? (
-        <p className="text-sm text-text-muted">No open limit orders{marketId ? ' on this market' : ''}.</p>
-      ) : (
-        <ul className="space-y-3">
-          {orders.map((o) => (
-            <li
-              key={o.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 border-b border-border-secondary last:border-0 last:pb-0"
-            >
-              <div className="text-sm text-text-secondary space-y-0.5">
-                {showMarketLink && (
-                  <div>
-                    <Link
-                      href={`/market/${o.market_id}`}
-                      className="font-medium text-accent-purple hover:underline"
-                    >
-                      {o.market_title || 'Market'}
-                    </Link>
-                  </div>
-                )}
+      <ul className={`space-y-3${loading ? ' opacity-60' : ''}`}>
+        {orders.map((o) => (
+          <li
+            key={o.id}
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 border-b border-border-secondary last:border-0 last:pb-0"
+          >
+            <div className="text-sm text-text-secondary space-y-0.5">
+              {showMarketLink && (
                 <div>
-                  <span
-                    className={
-                      o.side === 'YES' ? 'text-green-400' : 'text-red-400'
-                    }
+                  <Link
+                    href={`/market/${o.market_id}`}
+                    className="font-medium text-accent-purple hover:underline"
                   >
-                    {o.side}
-                  </span>{' '}
-                  <span className="text-text-primary">{o.order_type}</span> · $
-                  {o.price.toFixed(2)} · {o.filled_quantity}/{o.quantity} filled ·{' '}
-                  <span className="text-text-muted">{o.status}</span>
+                    {o.market_title || 'Market'}
+                  </Link>
                 </div>
+              )}
+              <div>
+                <span
+                  className={
+                    o.side === 'YES' ? 'text-pred-yes' : 'text-pred-no'
+                  }
+                >
+                  {o.side}
+                </span>{' '}
+                <span className="text-text-primary">{o.order_type}</span> · $
+                {o.price.toFixed(2)} · {o.filled_quantity}/{o.quantity} filled ·{' '}
+                <span className="text-text-muted">{o.status}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => handleCancel(o.id)}
-                disabled={cancellingId === o.id}
-                className="shrink-0 px-3 py-1.5 text-sm rounded-lg border border-border-secondary text-text-muted hover:text-text-primary hover:border-text-muted disabled:opacity-50 transition"
-              >
-                {cancellingId === o.id ? 'Cancelling…' : 'Pull'}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCancel(o.id)}
+              disabled={cancellingId === o.id || loading}
+              className="shrink-0 px-3 py-1.5 text-sm rounded-lg border border-border-secondary text-text-muted hover:text-text-primary hover:border-text-muted disabled:opacity-50 transition"
+            >
+              {cancellingId === o.id ? 'Cancelling…' : 'Pull'}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -7,8 +7,9 @@ This bot maintains market efficiency by:
 2. Exploiting minting arbitrage when best_ask_yes + best_ask_no < 0.99
 3. Exploiting redemption arbitrage when best_bid_yes + best_bid_no > 1.01
 
-Execution uses market orders (POST /api/orders/market) so the bot never holds multiple
-resting limit orders per market—the API allows at most one active limit order per user per market.
+Execution uses market orders (POST /api/orders/market) so the bot never holds resting
+limit orders—the API allows at most four active limit orders per user per market (one per
+YES/NO outcome side and buy/sell action).
 """
 
 import asyncio

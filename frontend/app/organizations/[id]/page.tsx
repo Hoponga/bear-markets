@@ -553,7 +553,7 @@ function BetCard({ bet, onClick }: { bet: PoolBet; onClick: () => void }) {
       <div className="flex justify-between items-center mb-3">
         <span className={`text-xs px-2 py-0.5 rounded font-medium ${
           bet.status === 'open'
-            ? 'bg-emerald-900/30 text-emerald-400'
+            ? 'bg-bg-hover text-success'
             : bet.status === 'locked'
             ? 'bg-yellow-900/30 text-yellow-400'
             : 'bg-gray-700 text-gray-300'
@@ -571,8 +571,8 @@ function BetCard({ bet, onClick }: { bet: PoolBet; onClick: () => void }) {
       {/* YES / NO distribution rows */}
       <div className="space-y-2 mb-3">
         {[
-          { label: 'YES', pct: yesPct, color: 'bg-emerald-600', text: 'text-emerald-400' },
-          { label: 'NO',  pct: 100 - yesPct, color: 'bg-rose-600', text: 'text-rose-400' },
+          { label: 'YES', pct: yesPct, color: 'bg-pred-yes-btn', text: 'text-pred-yes' },
+          { label: 'NO',  pct: 100 - yesPct, color: 'bg-pred-no-btn', text: 'text-pred-no' },
         ].map(({ label, pct, color, text }) => (
           <div key={label} className="flex items-center gap-2">
             <span className={`text-xs font-bold w-6 shrink-0 ${text}`}>{label}</span>
@@ -591,7 +591,7 @@ function BetCard({ bet, onClick }: { bet: PoolBet; onClick: () => void }) {
 
       {bet.user_bet && (
         <p className="text-xs text-text-disabled mt-2">
-          You: <span className={bet.user_bet.side === 'YES' ? 'text-emerald-400' : 'text-rose-400'}>{bet.user_bet.side}</span>
+          You: <span className={bet.user_bet.side === 'YES' ? 'text-pred-yes' : 'text-pred-no'}>{bet.user_bet.side}</span>
           {' '}({bet.user_bet.amount} tokens)
         </p>
       )}

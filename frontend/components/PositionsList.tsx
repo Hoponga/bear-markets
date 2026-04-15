@@ -77,8 +77,8 @@ export default function PositionsList({ positions }: PositionsListProps) {
                     <span
                       className={
                         position.resolved_outcome === 'YES'
-                          ? 'font-medium text-green-400'
-                          : 'font-medium text-red-400'
+                          ? 'font-medium text-pred-yes'
+                          : 'font-medium text-pred-no'
                       }
                     >
                       {position.resolved_outcome}
@@ -92,14 +92,14 @@ export default function PositionsList({ positions }: PositionsListProps) {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {position.yes_shares > 0 ? (
-                  <span className="font-medium text-green-400">{position.yes_shares}</span>
+                  <span className="font-medium text-pred-yes">{position.yes_shares}</span>
                 ) : (
                   <span className="text-text-disabled">0</span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {position.no_shares > 0 ? (
-                  <span className="font-medium text-red-400">{position.no_shares}</span>
+                  <span className="font-medium text-pred-no">{position.no_shares}</span>
                 ) : (
                   <span className="text-text-disabled">0</span>
                 )}

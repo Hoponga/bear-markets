@@ -82,16 +82,21 @@ async def create_order(
                 detail=f"Insufficient balance. Need {max_cost} tokens, have {current_user['token_balance']}"
             )
 
-    # At most one resting limit order per user per market (OPEN or PARTIAL)
+    # At most one resting limit order per user per market per side and action (OPEN or PARTIAL)
     existing_open = await db.orders.count_documents({
         "user_id": user_id,
         "market_id": market_id,
+        "side": order_data.side,
+        "order_type": order_data.order_type,
         "status": {"$in": ["OPEN", "PARTIAL"]},
     })
     if existing_open > 0:
         raise HTTPException(
             status_code=400,
-            detail="You already have an active limit order on this market. Cancel it before placing another.",
+            detail=(
+                f"You already have an active {order_data.side} {order_data.order_type} "
+                "limit order on this market. Cancel it before placing another."
+            ),
         )
 
     # Create the order
