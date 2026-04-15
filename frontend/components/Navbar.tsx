@@ -130,13 +130,29 @@ export default function Navbar() {
     setShowAuthModal(false);
   };
 
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(() =>
+    typeof window !== 'undefined'
+      ? (localStorage.getItem('theme') as 'light' | 'dark' | null)
+      : null
+  );
+  const [systemPrefersLight, setSystemPrefersLight] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-color-scheme: light)').matches
+      : false
+  );
 
   useEffect(() => {
-    // Read saved preference; null means "follow system"
-    const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    setTheme(saved);
-  }, []);
+    if (theme !== null) return;
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const onChange = () => setSystemPrefersLight(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [theme]);
+
+  const isLightUi =
+    theme === 'light' || (theme === null && systemPrefersLight);
+  const logoSrc = isLightUi ? '/logo_light_mode.png' : '/logo.png';
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -160,7 +176,13 @@ export default function Navbar() {
           <div className="flex justify-between items-center py-3">
             {/* Left - Logo */}
             <Link href="/" className="flex items-center space-x-2">
-              <Image src="/logo.png" alt="Bearmarket" width={48} height={48} />
+              <Image
+                key={logoSrc}
+                src={logoSrc}
+                alt="Bearmarket"
+                width={48}
+                height={48}
+              />
               <span className="text-sm font-medium text-navbar-link uppercase tracking-widest">
                 Bearmarket
               </span>
