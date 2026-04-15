@@ -324,7 +324,7 @@ export default function Navbar() {
                       onClick={toggleUserDropdown}
                       className="text-sm text-text-muted hover:text-text-primary font-medium transition"
                     >
-                      {user.name} · {user.token_balance.toFixed(2)} tokens
+                      {user.name} · {((user.token_balance ?? 0) - (user.held_balance ?? 0)).toFixed(2)} tokens{(user.held_balance ?? 0) > 0 ? ` (+${(user.held_balance ?? 0).toFixed(2)} held)` : ''}
                     </button>
                     {showUserDropdown && (
                       <div className="absolute right-0 top-full mt-2 w-48 bg-bg-card border border-border-primary rounded-lg shadow-lg z-50">

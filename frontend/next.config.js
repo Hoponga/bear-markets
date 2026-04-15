@@ -21,7 +21,7 @@ const nextConfig = {
     return [
       {
         source: '/api/proxy/:path*',
-        destination: `${backendUrl}/:path*`,
+        destination: `http://backend.railway.internal:8000/:path*`,
       },
     ];
   },

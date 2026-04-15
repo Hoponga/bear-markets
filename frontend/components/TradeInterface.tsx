@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { ordersAPI } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { ordersAPI, authAPI } from '@/lib/api';
 import { authStorage } from '@/lib/auth';
+import type { User } from '@/types';
 
 interface TradeInterfaceProps {
   marketId: string;
@@ -19,8 +20,11 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [user, setUser] = useState<User | null>(authStorage.getUser());
 
-  const user = authStorage.getUser();
+  useEffect(() => {
+    setUser(authStorage.getUser());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +63,11 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
         setQuantity('10');
         onOrderPlaced?.();
       }
+
+      // Refresh user balance so held/available tokens update immediately
+      const updatedUser = await authAPI.getMe();
+      authStorage.setUser(updatedUser);
+      setUser(updatedUser);
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -234,7 +243,7 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
 
         {/* Estimated Cost/Value */}
         {orderType === 'BUY' && (
-          <div className="bg-bg-hover border border-border-secondary rounded-lg p-3">
+          <div className="bg-bg-hover border border-border-secondary rounded-lg p-3 space-y-1">
             <p className="text-sm text-text-secondary">
               <span className="font-medium">
                 {executionType === 'MARKET' ? 'Budget:' : 'Max Cost:'}
@@ -242,9 +251,17 @@ export default function TradeInterface({ marketId, onOrderPlaced }: TradeInterfa
               ${estimatedCost.toFixed(2)}
             </p>
             {user && (
-              <p className="text-xs text-text-muted mt-1">
-                Your balance: ${user.token_balance.toFixed(2)}
-              </p>
+              <>
+                <p className="text-xs text-text-muted">
+                  Available: <span className="font-medium text-text-secondary">${(user.token_balance - (user.held_balance ?? 0)).toFixed(2)}</span>
+                </p>
+                {(user.held_balance ?? 0) > 0 && (
+                  <p className="text-xs text-text-disabled">
+                    Held in open orders: ${(user.held_balance ?? 0).toFixed(2)}
+                    {' '}· Total: ${user.token_balance.toFixed(2)}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

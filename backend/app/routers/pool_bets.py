@@ -7,7 +7,7 @@ from app.models import (
     PoolBetCreate, PoolBetResponse, PoolBetJoin, PoolBetEntryResponse,
     PoolBetResolve, NotificationResponse, BetCommentCreate, BetCommentResponse
 )
-from app.auth import get_current_user
+from app.auth import get_current_user, get_optional_user
 from app.database import get_database
 
 router = APIRouter(prefix="/api/organizations", tags=["pool_bets"])
@@ -671,19 +671,24 @@ async def get_bet_comments(
     if not ObjectId.is_valid(bet_id):
         raise HTTPException(status_code=400, detail="Invalid bet ID")
 
+    user_id = current_user["_id"]
     comments_cursor = db.bet_comments.find(
         {"bet_id": ObjectId(bet_id)}
     ).sort("created_at", 1)
 
     comments = []
     async for c in comments_cursor:
+        likes = c.get("likes", [])
         comments.append(BetCommentResponse(
             id=str(c["_id"]),
             user_id=str(c["user_id"]),
             user_name=c["user_name"],
             user_side=c["user_side"],
             text=c["text"],
-            created_at=c["created_at"]
+            created_at=c["created_at"],
+            reply_to_id=str(c["reply_to_id"]) if c.get("reply_to_id") else None,
+            like_count=len(likes),
+            liked_by_user=user_id in likes,
         ))
     return comments
 
@@ -716,13 +721,21 @@ async def post_bet_comment(
     if not text:
         raise HTTPException(status_code=400, detail="Comment cannot be empty")
 
+    reply_to_id = None
+    if comment_data.reply_to_id:
+        if not ObjectId.is_valid(comment_data.reply_to_id):
+            raise HTTPException(status_code=400, detail="Invalid reply_to_id")
+        reply_to_id = ObjectId(comment_data.reply_to_id)
+
     comment = {
         "bet_id": ObjectId(bet_id),
         "user_id": current_user["_id"],
         "user_name": current_user["name"],
         "user_side": entry["side"],
         "text": text,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "reply_to_id": reply_to_id,
+        "likes": [],
     }
     result = await db.bet_comments.insert_one(comment)
 
@@ -732,8 +745,48 @@ async def post_bet_comment(
         user_name=current_user["name"],
         user_side=entry["side"],
         text=text,
-        created_at=comment["created_at"]
+        created_at=comment["created_at"],
+        reply_to_id=comment_data.reply_to_id,
+        like_count=0,
+        liked_by_user=False,
     )
+
+
+@router.post("/{org_id}/bets/{bet_id}/comments/{comment_id}/like")
+async def toggle_bet_comment_like(
+    org_id: str,
+    bet_id: str,
+    comment_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Toggle like on a bet comment"""
+    db = await get_database()
+    await verify_org_member(db, org_id, current_user["_id"])
+
+    if not ObjectId.is_valid(bet_id) or not ObjectId.is_valid(comment_id):
+        raise HTTPException(status_code=400, detail="Invalid ID")
+
+    comment = await db.bet_comments.find_one({
+        "_id": ObjectId(comment_id),
+        "bet_id": ObjectId(bet_id),
+    })
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    user_id = current_user["_id"]
+    likes = comment.get("likes", [])
+    if user_id in likes:
+        await db.bet_comments.update_one(
+            {"_id": ObjectId(comment_id)},
+            {"$pull": {"likes": user_id}},
+        )
+        return {"liked": False, "like_count": len(likes) - 1}
+    else:
+        await db.bet_comments.update_one(
+            {"_id": ObjectId(comment_id)},
+            {"$push": {"likes": user_id}},
+        )
+        return {"liked": True, "like_count": len(likes) + 1}
 
 
 @router.post("/{org_id}/members/{user_id}/balance")

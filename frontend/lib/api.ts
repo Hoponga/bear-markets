@@ -198,8 +198,13 @@ export const marketsAPI = {
     return data;
   },
 
-  postComment: async (marketId: string, text: string) => {
-    const { data } = await api.post(`/api/markets/${marketId}/comments`, { text });
+  postComment: async (marketId: string, text: string, replyToId?: string) => {
+    const { data } = await api.post(`/api/markets/${marketId}/comments`, { text, reply_to_id: replyToId ?? null });
+    return data;
+  },
+
+  likeComment: async (marketId: string, commentId: string) => {
+    const { data } = await api.post(`/api/markets/${marketId}/comments/${commentId}/like`);
     return data;
   },
 };
@@ -465,8 +470,13 @@ export const organizationsAPI = {
     return data;
   },
 
-  postComment: async (orgId: string, betId: string, text: string) => {
-    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/comments`, { text });
+  postComment: async (orgId: string, betId: string, text: string, replyToId?: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/comments`, { text, reply_to_id: replyToId ?? null });
+    return data;
+  },
+
+  likeComment: async (orgId: string, betId: string, commentId: string) => {
+    const { data } = await api.post(`/api/organizations/${orgId}/bets/${betId}/comments/${commentId}/like`);
     return data;
   },
 

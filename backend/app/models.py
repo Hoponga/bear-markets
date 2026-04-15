@@ -37,6 +37,7 @@ class UserResponse(BaseModel):
     name: str
     token_balance: float
     is_admin: bool
+    held_balance: float = 0.0
     is_bot: bool = False
 
 
@@ -361,6 +362,7 @@ class EditMemberBalanceRequest(BaseModel):
 # Bet Comment Models
 class BetCommentCreate(BaseModel):
     text: str
+    reply_to_id: Optional[str] = None
 
 class BetCommentResponse(BaseModel):
     id: str
@@ -369,11 +371,15 @@ class BetCommentResponse(BaseModel):
     user_side: Literal["YES", "NO"]
     text: str
     created_at: datetime
+    reply_to_id: Optional[str] = None
+    like_count: int = 0
+    liked_by_user: bool = False
 
 
 # Market Comment Models
 class MarketCommentCreate(BaseModel):
     text: str
+    reply_to_id: Optional[str] = None
 
 class MarketCommentResponse(BaseModel):
     id: str
@@ -382,3 +388,6 @@ class MarketCommentResponse(BaseModel):
     user_side: Literal["YES", "NO"]
     text: str
     created_at: datetime
+    reply_to_id: Optional[str] = None
+    like_count: int = 0
+    liked_by_user: bool = False

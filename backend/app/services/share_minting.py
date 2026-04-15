@@ -73,12 +73,22 @@ async def attempt_share_minting(
             {"_id": new_order["user_id"]},
             {"$inc": {"token_balance": -new_order_cost}}
         )
+        if new_order.get("tokens_held"):
+            await db.users.update_one(
+                {"_id": new_order["user_id"]},
+                {"$inc": {"held_balance": -new_order_cost}}
+            )
 
         # Deduct from opposite order user
         await db.users.update_one(
             {"_id": opp_order["user_id"]},
             {"$inc": {"token_balance": -opp_order_cost}}
         )
+        if opp_order.get("tokens_held"):
+            await db.users.update_one(
+                {"_id": opp_order["user_id"]},
+                {"$inc": {"held_balance": -opp_order_cost}}
+            )
 
         # Update or create positions for new order user
         await update_position(

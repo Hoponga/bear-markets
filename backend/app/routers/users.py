@@ -65,6 +65,7 @@ async def register(user_data: UserCreate):
             name=user_data.name,
             token_balance=1000.0,
             is_admin=False,
+            held_balance=0.0,
             is_bot=False
         )
     }
@@ -100,6 +101,7 @@ async def login(user_data: UserLogin):
             name=user["name"],
             token_balance=user["token_balance"],
             is_admin=user.get("is_admin", False),
+            held_balance=user.get("held_balance", 0.0),
             is_bot=user.get("is_bot", False)
         )
     }
@@ -169,6 +171,12 @@ async def google_auth(request: GoogleAuthRequest):
             expires_delta=access_token_expires
         )
 
+        # Determine held_balance for the response
+        if user:
+            response_held_balance = user.get("held_balance", 0.0)
+        else:
+            response_held_balance = 0.0
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
@@ -178,6 +186,7 @@ async def google_auth(request: GoogleAuthRequest):
                 name=name,
                 token_balance=token_balance,
                 is_admin=is_admin,
+                held_balance=response_held_balance,
                 is_bot=False
             )
         }
@@ -198,6 +207,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         name=current_user["name"],
         token_balance=current_user["token_balance"],
         is_admin=current_user.get("is_admin", False),
+        held_balance=current_user.get("held_balance", 0.0),
         is_bot=current_user.get("is_bot", False)
     )
 
@@ -227,6 +237,7 @@ async def update_profile(
         name=profile_data.name.strip(),
         token_balance=current_user["token_balance"],
         is_admin=current_user.get("is_admin", False),
+        held_balance=current_user.get("held_balance", 0.0),
         is_bot=current_user.get("is_bot", False)
     )
 
