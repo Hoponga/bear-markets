@@ -4,7 +4,7 @@ from bson import ObjectId
 from datetime import datetime
 
 from app.models import MarketCreate, MarketResponse, MarketResolve, OrderbookResponse, MarketCommentCreate, MarketCommentResponse
-from app.auth import get_current_user, get_current_admin
+from app.auth import get_current_user, get_current_admin, get_optional_user
 from app.database import get_database
 from app.services.market_quotes import best_quotes_for_market
 from app.services.user_notifications import notify_market_resolved, notify_order_cancelled_on_resolve
@@ -358,7 +358,10 @@ async def delete_market(
 
 
 @router.get("/{market_id}/comments", response_model=List[MarketCommentResponse])
-async def get_market_comments(market_id: str):
+async def get_market_comments(
+    market_id: str,
+    current_user: dict = Depends(get_optional_user),
+):
     """Get all comments for a market (public)"""
     if not ObjectId.is_valid(market_id):
         raise HTTPException(status_code=400, detail="Invalid market ID")
@@ -367,8 +370,10 @@ async def get_market_comments(market_id: str):
     if not await db.markets.find_one({"_id": ObjectId(market_id)}):
         raise HTTPException(status_code=404, detail="Market not found")
 
+    user_id = current_user["_id"] if current_user else None
     comments = []
     async for c in db.market_comments.find({"market_id": ObjectId(market_id)}).sort("created_at", 1):
+        likes = c.get("likes", [])
         comments.append(MarketCommentResponse(
             id=str(c["_id"]),
             user_id=str(c["user_id"]),
@@ -376,6 +381,9 @@ async def get_market_comments(market_id: str):
             user_side=c["user_side"],
             text=c["text"],
             created_at=c["created_at"],
+            reply_to_id=str(c["reply_to_id"]) if c.get("reply_to_id") else None,
+            like_count=len(likes),
+            liked_by_user=user_id in likes if user_id else False,
         ))
     return comments
 
@@ -398,6 +406,12 @@ async def post_market_comment(
     if not await db.markets.find_one({"_id": ObjectId(market_id)}):
         raise HTTPException(status_code=404, detail="Market not found")
 
+    reply_to_id = None
+    if comment_data.reply_to_id:
+        if not ObjectId.is_valid(comment_data.reply_to_id):
+            raise HTTPException(status_code=400, detail="Invalid reply_to_id")
+        reply_to_id = ObjectId(comment_data.reply_to_id)
+
     position = await db.positions.find_one({
         "market_id": ObjectId(market_id),
         "user_id": current_user["_id"],
@@ -416,6 +430,8 @@ async def post_market_comment(
         "user_side": user_side,
         "text": text,
         "created_at": datetime.utcnow(),
+        "reply_to_id": reply_to_id,
+        "likes": [],
     }
     result = await db.market_comments.insert_one(doc)
 
@@ -426,4 +442,41 @@ async def post_market_comment(
         user_side=user_side,
         text=text,
         created_at=doc["created_at"],
+        reply_to_id=comment_data.reply_to_id,
+        like_count=0,
+        liked_by_user=False,
     )
+
+
+@router.post("/{market_id}/comments/{comment_id}/like")
+async def toggle_market_comment_like(
+    market_id: str,
+    comment_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Toggle like on a market comment"""
+    if not ObjectId.is_valid(market_id) or not ObjectId.is_valid(comment_id):
+        raise HTTPException(status_code=400, detail="Invalid ID")
+
+    db = await get_database()
+    comment = await db.market_comments.find_one({
+        "_id": ObjectId(comment_id),
+        "market_id": ObjectId(market_id),
+    })
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    user_id = current_user["_id"]
+    likes = comment.get("likes", [])
+    if user_id in likes:
+        await db.market_comments.update_one(
+            {"_id": ObjectId(comment_id)},
+            {"$pull": {"likes": user_id}},
+        )
+        return {"liked": False, "like_count": len(likes) - 1}
+    else:
+        await db.market_comments.update_one(
+            {"_id": ObjectId(comment_id)},
+            {"$push": {"likes": user_id}},
+        )
+        return {"liked": True, "like_count": len(likes) + 1}

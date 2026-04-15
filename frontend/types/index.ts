@@ -241,6 +241,9 @@ export interface BetComment {
   user_side: 'YES' | 'NO';
   text: string;
   created_at: string;
+  reply_to_id?: string | null;
+  like_count: number;
+  liked_by_user: boolean;
 }
 
 export interface MarketComment {
@@ -250,6 +253,9 @@ export interface MarketComment {
   user_side: 'YES' | 'NO';
   text: string;
   created_at: string;
+  reply_to_id?: string | null;
+  like_count: number;
+  liked_by_user: boolean;
 }
 
 // Notification Types

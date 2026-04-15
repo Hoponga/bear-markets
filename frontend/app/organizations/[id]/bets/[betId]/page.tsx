@@ -9,18 +9,20 @@ import type { PoolBet, PoolBetEntry, BetComment } from '@/types';
 // ─── Comments Section ─────────────────────────────────────────────────────────
 
 function CommentsSection({
-  orgId, betId, userBet, comments, onNewComment,
+  orgId, betId, userBet, comments, onCommentsChange,
 }: {
   orgId: string;
   betId: string;
   userBet: PoolBet['user_bet'];
   comments: BetComment[];
-  onNewComment: (c: BetComment) => void;
+  onCommentsChange: (updater: (prev: BetComment[]) => BetComment[]) => void;
 }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [replyTo, setReplyTo] = useState<BetComment | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,9 +30,10 @@ function CommentsSection({
     setLoading(true);
     setError('');
     try {
-      const comment = await organizationsAPI.postComment(orgId, betId, text.trim());
-      onNewComment(comment);
+      const comment = await organizationsAPI.postComment(orgId, betId, text.trim(), replyTo?.id);
+      onCommentsChange((prev) => [...prev, comment]);
       setText('');
+      setReplyTo(null);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to post comment');
@@ -39,37 +42,92 @@ function CommentsSection({
     }
   };
 
+  const handleLike = async (commentId: string) => {
+    if (!userBet) return;
+    try {
+      const result = await organizationsAPI.likeComment(orgId, betId, commentId);
+      onCommentsChange((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? { ...c, liked_by_user: result.liked, like_count: result.like_count }
+            : c
+        )
+      );
+    } catch {}
+  };
+
+  const handleReply = (comment: BetComment) => {
+    setReplyTo(comment);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
   const fmt = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
+  const topLevel = comments.filter((c) => !c.reply_to_id);
+  const replies = comments.filter((c) => !!c.reply_to_id);
+  const repliesFor = (id: string) => replies.filter((r) => r.reply_to_id === id);
+
+  const CommentCard = ({ c, indent = false }: { c: BetComment; indent?: boolean }) => (
+    <div className={`flex gap-3 ${indent ? 'ml-8 mt-2' : ''}`}>
+      <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded h-fit mt-0.5 ${
+        c.user_side === 'YES'
+          ? 'bg-pred-yes-surface text-pred-yes'
+          : 'bg-pred-no-surface text-pred-no'
+      }`}>
+        {c.user_side}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-medium text-text-primary">{c.user_name}</span>
+          <span className="text-xs text-text-disabled">{fmt(c.created_at)}</span>
+        </div>
+        <p className="text-sm text-text-muted mt-0.5 break-words">{c.text}</p>
+        {userBet && (
+          <div className="flex items-center gap-3 mt-1.5">
+            <button
+              onClick={() => handleLike(c.id)}
+              className={`flex items-center gap-1 text-xs transition ${
+                c.liked_by_user ? 'text-pred-yes' : 'text-text-disabled hover:text-text-muted'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill={c.liked_by_user ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" />
+              </svg>
+              {c.like_count > 0 && <span>{c.like_count}</span>}
+            </button>
+            {!indent && (
+              <button
+                onClick={() => handleReply(c)}
+                className="text-xs text-text-disabled hover:text-text-muted transition"
+              >
+                Reply
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <h3 className="text-lg font-semibold text-text-primary mb-4">Discussion</h3>
 
-      {comments.length === 0 ? (
+      {topLevel.length === 0 ? (
         <p className="text-text-disabled text-sm text-center py-4 mb-4">
           {userBet ? 'No comments yet — be the first!' : 'Place a bet to join the discussion.'}
         </p>
       ) : (
         <div className="space-y-4 mb-4">
-          {comments.map((c) => (
-            <div key={c.id} className="flex gap-3">
-              <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded h-fit mt-0.5 ${
-                c.user_side === 'YES'
-                  ? 'bg-pred-yes-surface text-pred-yes'
-                  : 'bg-pred-no-surface text-pred-no'
-              }`}>
-                {c.user_side}
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-text-primary">{c.user_name}</span>
-                  <span className="text-xs text-text-disabled">{fmt(c.created_at)}</span>
-                </div>
-                <p className="text-sm text-text-muted mt-0.5 break-words">{c.text}</p>
-              </div>
+          {topLevel.map((c) => (
+            <div key={c.id}>
+              <CommentCard c={c} />
+              {repliesFor(c.id).map((r) => (
+                <CommentCard key={r.id} c={r} indent />
+              ))}
             </div>
           ))}
           <div ref={bottomRef} />
@@ -78,6 +136,12 @@ function CommentsSection({
 
       {userBet ? (
         <form onSubmit={handleSubmit} className="space-y-2">
+          {replyTo && (
+            <div className="flex items-center gap-2 text-xs text-text-disabled bg-bg-input px-3 py-1.5 rounded-lg">
+              <span>Replying to <span className="text-text-muted font-medium">{replyTo.user_name}</span></span>
+              <button type="button" onClick={() => setReplyTo(null)} className="ml-auto hover:text-text-muted">✕</button>
+            </div>
+          )}
           <div className="flex gap-2 items-start">
             <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded mt-1 ${
               userBet.side === 'YES' ? 'bg-pred-yes-surface text-pred-yes' : 'bg-pred-no-surface text-pred-no'
@@ -85,9 +149,10 @@ function CommentsSection({
               {userBet.side}
             </span>
             <textarea
+              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Share your reasoning..."
+              placeholder={replyTo ? `Reply to ${replyTo.user_name}...` : 'Share your reasoning...'}
               rows={2}
               className="flex-1 px-3 py-2 bg-bg-input border border-border-secondary text-text-primary rounded-lg text-sm resize-none focus:ring-2 focus:ring-border-secondary focus:border-transparent placeholder-text-disabled"
             />
@@ -410,7 +475,7 @@ export default function BetDetailPage() {
             betId={betId}
             userBet={bet.user_bet}
             comments={comments}
-            onNewComment={(c) => setComments((prev) => [...prev, c])}
+            onCommentsChange={setComments}
           />
         </div>
 
