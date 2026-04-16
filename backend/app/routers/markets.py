@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from typing import List
+from typing import List, Any, Optional
 from bson import ObjectId
 from datetime import datetime
 
@@ -10,6 +10,27 @@ from app.services.market_quotes import best_quotes_for_market
 from app.services.user_notifications import notify_market_resolved, notify_order_cancelled_on_resolve
 
 router = APIRouter(prefix="/api/markets", tags=["markets"])
+
+
+def _user_side_from_open_limit_orders(orders: List[Any]) -> Optional[str]:
+    """YES/NO from the resting limit order with the largest remaining quantity (tie: YES)."""
+    max_rem = 0
+    sides_at_max: set[str] = set()
+    for o in orders:
+        rem = int(o["quantity"]) - int(o.get("filled_quantity", 0))
+        if rem <= 0:
+            continue
+        side = o["side"]
+        if rem > max_rem:
+            max_rem = rem
+            sides_at_max = {side}
+        elif rem == max_rem:
+            sides_at_max.add(side)
+    if max_rem == 0:
+        return None
+    if "YES" in sides_at_max:
+        return "YES"
+    return "NO"
 
 
 @router.get("", response_model=List[MarketResponse])
@@ -507,7 +528,7 @@ async def post_market_comment(
     comment_data: MarketCommentCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Post a comment on a market (requires holding a position)"""
+    """Post a comment on a market (requires a position or an active limit order)"""
     if not ObjectId.is_valid(market_id):
         raise HTTPException(status_code=400, detail="Invalid market ID")
 
@@ -516,7 +537,8 @@ async def post_market_comment(
         raise HTTPException(status_code=400, detail="Comment cannot be empty")
 
     db = await get_database()
-    if not await db.markets.find_one({"_id": ObjectId(market_id)}):
+    market_oid = ObjectId(market_id)
+    if not await db.markets.find_one({"_id": market_oid}):
         raise HTTPException(status_code=404, detail="Market not found")
 
     reply_to_id = None
@@ -526,18 +548,40 @@ async def post_market_comment(
         reply_to_id = ObjectId(comment_data.reply_to_id)
 
     position = await db.positions.find_one({
-        "market_id": ObjectId(market_id),
+        "market_id": market_oid,
         "user_id": current_user["_id"],
     })
     yes_shares = position.get("yes_shares", 0) if position else 0
     no_shares = position.get("no_shares", 0) if position else 0
-    if yes_shares == 0 and no_shares == 0:
-        raise HTTPException(status_code=403, detail="You must hold a position in this market to comment")
 
-    user_side = "YES" if yes_shares >= no_shares else "NO"
+    open_orders: List[Any] = []
+    async for o in db.orders.find({
+        "market_id": market_oid,
+        "user_id": current_user["_id"],
+        "status": {"$in": ["OPEN", "PARTIAL"]},
+    }):
+        open_orders.append(o)
+    limit_side = _user_side_from_open_limit_orders(open_orders)
+
+    has_position = yes_shares > 0 or no_shares > 0
+    has_open_limit = limit_side is not None
+
+    if not has_position and not has_open_limit:
+        raise HTTPException(
+            status_code=403,
+            detail="You must hold a position or have an active limit order in this market to comment",
+        )
+
+    # Limit-only: side from largest resting limit; with both position and limits, use larger held leg.
+    if has_position and has_open_limit:
+        user_side = "YES" if yes_shares >= no_shares else "NO"
+    elif has_open_limit:
+        user_side = limit_side
+    else:
+        user_side = "YES" if yes_shares >= no_shares else "NO"
 
     doc = {
-        "market_id": ObjectId(market_id),
+        "market_id": market_oid,
         "user_id": current_user["_id"],
         "user_name": current_user["name"],
         "user_side": user_side,
